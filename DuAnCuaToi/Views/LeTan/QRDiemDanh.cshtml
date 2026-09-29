@@ -1,0 +1,53 @@
+﻿@{
+    ViewData["Title"] = "QR Điểm Danh";
+}
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<div class="max-w-lg mx-auto my-10 px-4 font-sans">
+
+    <div class="text-center mb-6">
+        <h1 class="text-xl sm:text-2xl font-black text-amber-400 uppercase tracking-wide flex items-center justify-center gap-3">
+            <i class="fa-solid fa-qrcode"></i>
+            QR Điểm Danh Hội Viên
+        </h1>
+        <p class="text-slate-400 text-sm mt-2">
+            Hội viên vui lòng dùng điện thoại quét mã QR bên dưới để xác nhận điểm danh.
+        </p>
+    </div>
+
+    <div class="bg-[#1e232a] border border-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8 text-center space-y-5">
+
+        <h2 class="text-sm font-bold text-white uppercase tracking-wide">Mã QR điểm danh</h2>
+
+        @if (ViewBag.QRCode != null)
+        {
+            <div class="bg-white rounded-2xl p-4 inline-block">
+                <img src="data:image/png;base64,@ViewBag.QRCode" alt="QR điểm danh" class="w-full max-w-[280px] mx-auto rounded-lg" />
+            </div>
+        }
+
+        <div class="bg-sky-500/10 border border-sky-500/30 rounded-xl p-4 text-left">
+            <p class="text-sky-400 font-bold text-xs uppercase mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-circle-info"></i>
+                Hướng dẫn
+            </p>
+            <ol class="list-decimal list-inside text-slate-300 text-sm space-y-1">
+                <li>Hội viên đăng nhập vào hệ thống.</li>
+                <li>Mở camera điện thoại.</li>
+                <li>Quét mã QR ở trên.</li>
+                <li>Xác nhận điểm danh.</li>
+            </ol>
+        </div>
+
+        @if (ViewBag.CheckInUrl != null)
+        {
+            <div class="text-left">
+                <p class="text-slate-500 text-xs uppercase font-semibold">Địa chỉ được mã hóa trong QR</p>
+                <p class="text-slate-400 text-xs break-all mt-1 font-mono">@ViewBag.CheckInUrl</p>
+            </div>
+        }
+
+    </div>
+
+</div>

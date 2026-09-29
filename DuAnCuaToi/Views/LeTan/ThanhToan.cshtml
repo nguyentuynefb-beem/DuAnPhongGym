@@ -1,0 +1,154 @@
+﻿@using DuAnCuaToi.Models
+
+@{
+    ViewData["Title"] = "Thanh toán tại quầy";
+
+    var hoiViens = ViewBag.HoiViens as List<NguoiDung>;
+    var goiTaps = ViewBag.GoiTaps as List<GoiTap>;
+}
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<div class="max-w-3xl mx-auto my-6 px-2 sm:px-4 font-sans">
+
+    <div class="bg-[#1e232a] border border-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6">
+
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800 pb-5">
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black text-amber-400 uppercase tracking-wide flex items-center gap-3">
+                    <i class="fa-solid fa-cash-register"></i>
+                    Thanh Toán Tại Quầy
+                </h1>
+                <p class="text-slate-400 text-sm mt-1">Đăng ký gói tập và thanh toán trực tiếp cho hội viên.</p>
+            </div>
+            <a asp-action="Index"
+               class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shrink-0">
+                <i class="fa-solid fa-arrow-left"></i>
+                Quay lại Dashboard
+            </a>
+        </div>
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-2xl text-sm flex items-center gap-2">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>@TempData["Success"]</span>
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="p-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl text-sm flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>@TempData["Error"]</span>
+            </div>
+        }
+
+        <form asp-action="ThanhToan" method="post" class="space-y-6">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-2">Hội viên</label>
+                    <select name="nguoiDungId" required
+                            class="w-full bg-[#161a20] border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-amber-400 transition">
+                        <option value="">-- Chọn hội viên --</option>
+                        @foreach (var hv in hoiViens)
+                        {
+                            <option value="@hv.Id">@hv.HoTen (@hv.MaHoiVien)</option>
+                        }
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-2">Gói tập</label>
+                    <select id="goiTap" name="goiTapId" required
+                            class="w-full bg-[#161a20] border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-amber-400 transition">
+                        <option value="">-- Chọn gói tập --</option>
+                        @foreach (var item in goiTaps)
+                        {
+                            <option value="@item.Id" data-price="@item.Gia" data-day="@item.ThoiHanNgay">@item.TenGoi</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div class="bg-[#161a20] border border-slate-800 rounded-xl p-4">
+                    <div class="text-slate-400 text-xs uppercase font-semibold">Giá gói</div>
+                    <h3 id="giaText" class="text-xl font-black text-emerald-400 mt-1">0 VNĐ</h3>
+                </div>
+                <div class="bg-[#161a20] border border-slate-800 rounded-xl p-4">
+                    <div class="text-slate-400 text-xs uppercase font-semibold">Thời hạn</div>
+                    <h3 id="dayText" class="text-xl font-black text-amber-400 mt-1">0 ngày</h3>
+                </div>
+            </div>
+
+            <div>
+                <h4 class="text-xs font-semibold uppercase text-slate-400 mb-3">Phương thức thanh toán</h4>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center gap-2 bg-[#161a20] border border-slate-800 rounded-xl px-4 py-3 cursor-pointer text-slate-200 text-sm hover:border-amber-400 transition">
+                        <input type="radio" name="phuongThuc" value="Tiền mặt" checked class="accent-amber-400">
+                        Tiền mặt
+                    </label>
+                    <label class="flex items-center gap-2 bg-[#161a20] border border-slate-800 rounded-xl px-4 py-3 cursor-pointer text-slate-200 text-sm hover:border-amber-400 transition">
+                        <input type="radio" name="phuongThuc" value="Chuyển khoản" class="accent-amber-400">
+                        Chuyển khoản
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold py-3.5 rounded-xl text-sm sm:text-base transition shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-credit-card"></i>
+                Thanh Toán Ngay
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+
+    <script>
+
+        const select=document.getElementById("goiTap");
+
+        const gia=document.getElementById("giaText");
+
+        const day=document.getElementById("dayText");
+
+        select.addEventListener("change",function(){
+
+            let opt=this.options[this.selectedIndex];
+
+            let price=opt.dataset.price;
+
+            let days=opt.dataset.day;
+
+            if(price==undefined){
+
+                gia.innerHTML="0 VNĐ";
+
+                day.innerHTML="0 ngày";
+
+                return;
+
+            }
+
+            gia.innerHTML=
+
+            Number(price).toLocaleString("vi-VN")
+
+            +" VNĐ";
+
+            day.innerHTML=
+
+            days+" ngày";
+
+        });
+
+    </script>
+
+}

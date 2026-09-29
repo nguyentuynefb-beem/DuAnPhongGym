@@ -1,0 +1,139 @@
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('healthForm');
+        const chartCanvas = document.getElementById('healthChart');
+        let healthChart = null;
+
+        function computeRating(bmi) {
+            if (!bmi || bmi === 0) return '';
+            if (bmi < 18.5) return 'Thiếu cân';
+            if (bmi < 23) return 'Bình thường';
+            if (bmi < 25) return 'Thừa cân';
+            if (bmi < 30) return 'Béo phì độ I';
+            return 'Béo phì';
+        }
+
+        async function loadHistory(take = 20) {
+            try {
+                const url = '@Url.Action("HealthHistory","User")' + '?take=' + take;
+                const res = await fetch(url, { credentials: 'same-origin' });
+                const json = await res.json();
+
+                if (!json.success) return;
+
+                const data = json.data || [];
+
+                const items = data.slice().reverse();
+
+                const labels = items.map(d => new Date(d.NgayDo).toLocaleDateString());
+                const weights = items.map(d => d.CanNang ?? 0);
+                const bmis = items.map(d => d.BMI ?? 0);
+
+                if (healthChart) {
+                    healthChart.data.labels = labels;
+                    healthChart.data.datasets[0].data = weights;
+                    healthChart.data.datasets[1].data = bmis;
+                    healthChart.update();
+                } else {
+                    healthChart = new Chart(chartCanvas.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Cân nặng (kg)',
+                                    data: weights,
+                                    borderColor: '#28a745',
+                                    backgroundColor: 'rgba(40,167,69,0.1)',
+                                    yAxisID: 'y',
+                                    tension: 0.2,
+                                    fill: true
+                                },
+                                {
+                                    label: 'BMI',
+                                    data: bmis,
+                                    borderColor: '#007bff',
+                                    backgroundColor: 'rgba(0,123,255,0.1)',
+                                    yAxisID: 'y1',
+                                    tension: 0.2,
+                                    fill: true
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            interaction: { mode: 'index', intersect: false },
+                            stacked: false,
+                            scales: {
+                                y: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'left',
+                                    title: { display: true, text: 'Cân nặng (kg)' }
+                                },
+                                y1: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'right',
+                                    grid: { drawOnChartArea: false },
+                                    title: { display: true, text: 'BMI' }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                if (data.length > 0) {
+                    const latest = data[0];
+                    const bmiEl = document.getElementById('currentBmi');
+                    const ratingEl = document.getElementById('bmiRating');
+                    if (bmiEl) bmiEl.innerText = latest.BMI ?? '';
+                    if (ratingEl) ratingEl.innerText = computeRating(latest.BMI);
+                }
+
+            } catch (ex) {
+                console.error('Failed to load history', ex);
+            }
+        }
+
+        async function submitHandler(e) {
+            e.preventDefault();
+            const fd = new FormData(form);
+            const tokenInput = form.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : null;
+
+            try {
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'RequestVerificationToken': token
+                    },
+                    body: fd,
+                    credentials: 'same-origin'
+                });
+
+                const json = await res.json().catch(() => null);
+
+                if (json && json.success) {
+                    await loadHistory();
+                    alert('Lưu thành công');
+                } else if (json && json.errors) {
+                    const messages = [];
+                    Object.values(json.errors).forEach(arr => arr.forEach(m => messages.push(m)));
+                    alert(messages.join('\n'));
+                } else {
+                    window.location.reload();
+                }
+
+            } catch (ex) {
+                console.error('Save failed', ex);
+                alert('Lưu thất bại');
+            }
+        }
+
+        if (form) form.addEventListener('submit', submitHandler);
+        loadHistory();
+    });
+</script>

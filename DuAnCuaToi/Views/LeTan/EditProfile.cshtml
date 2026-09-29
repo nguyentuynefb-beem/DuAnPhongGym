@@ -1,0 +1,238 @@
+﻿@model DuAnCuaToi.Models.EditProfileViewModel
+
+<div class="profile-container">
+
+    <div class="profile-card">
+
+        <div class="profile-header">
+
+            <h2>
+                <i class="fas fa-user-circle"></i>
+                Thông tin cá nhân
+            </h2>
+
+            <p>
+                Cập nhật thông tin tài khoản của bạn.
+            </p>
+
+        </div>
+
+        <form asp-action="EditProfile" method="post">
+
+            <input asp-for="Id" hidden />
+
+            <div class="form-group">
+
+                <label>Họ và tên</label>
+
+                <input asp-for="HoTen" class="form-control" />
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Tên đăng nhập</label>
+
+                <input asp-for="TenDangNhap" class="form-control" />
+
+            </div>
+
+            <div class="row">
+
+                <div class="col-md-6">
+
+                    <div class="form-group">
+
+                        <label>Mật khẩu mới</label>
+
+                        <input type="password"
+                               name="MatKhauMoi"
+                               class="form-control" />
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-6">
+
+                    <div class="form-group">
+
+                        <label>Xác nhận mật khẩu</label>
+
+                        <input type="password"
+                               name="XacNhanMatKhau"
+                               class="form-control" />
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="button-group">
+
+                <button class="btn-save">
+
+                    <i class="fas fa-save"></i>
+                    Lưu thay đổi
+
+                </button>
+
+                <a href="javascript:history.back()"
+                   class="btn-cancel">
+
+                    Hủy
+
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+<style>
+
+    .profile-container{
+
+        display:flex;
+        justify-content:center;
+        margin-top:40px;
+        margin-bottom:50px;
+
+    }
+
+    .profile-card{
+
+        width:700px;
+
+        background:#252a31;
+
+        border:1px solid #454b55;
+
+        border-radius:18px;
+
+        padding:35px;
+
+        box-shadow:0 0 25px rgba(0,0,0,.35);
+
+    }
+
+    .profile-header{
+
+        margin-bottom:30px;
+
+    }
+
+    .profile-header h2{
+
+        color:#ffc62a;
+
+        font-weight:bold;
+
+    }
+
+    .profile-header p{
+
+        color:#c8c8c8;
+
+    }
+
+    .form-group{
+
+        margin-bottom:22px;
+
+    }
+
+    .form-group label{
+
+        color:white;
+
+        margin-bottom:8px;
+
+        font-weight:600;
+
+    }
+
+    .form-control{
+
+        background:#1d2127;
+
+        color:white;
+
+        border:1px solid #555;
+
+        height:48px;
+
+    }
+
+    .form-control:focus{
+
+        background:#1d2127;
+
+        color:white;
+
+        border-color:#ffc62a;
+
+        box-shadow:0 0 10px rgba(255,198,42,.3);
+
+    }
+
+    .button-group{
+
+        margin-top:35px;
+
+        display:flex;
+
+        gap:15px;
+
+    }
+
+    .btn-save{
+
+        background:#ffc62a;
+
+        color:#111;
+
+        border:none;
+
+        padding:12px 28px;
+
+        border-radius:10px;
+
+        font-weight:bold;
+
+        transition:.25s;
+
+    }
+
+    .btn-save:hover{
+
+        background:#ffb800;
+
+    }
+
+    .btn-cancel{
+
+        background:#3b4149;
+
+        color:white;
+
+        padding:12px 28px;
+
+        border-radius:10px;
+
+        text-decoration:none;
+
+    }
+
+    .btn-cancel:hover{
+
+        background:#4b515a;
+
+        color:white;
+
+    }
+
+</style>

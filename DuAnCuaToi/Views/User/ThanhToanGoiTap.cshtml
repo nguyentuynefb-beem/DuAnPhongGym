@@ -1,0 +1,558 @@
+﻿@model DuAnCuaToi.Models.HoaDon
+
+@{
+    Layout = null;
+
+    var goi = Model.DangKyGoiTap?.GoiTap;
+    var hoiVien = Model.DangKyGoiTap?.NguoiDung;
+
+    var trangThai =
+        Model.TrangThai ?? "Chưa thanh toán";
+}
+
+<!DOCTYPE html>
+
+<html lang="vi">
+
+<head>
+
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title>Thanh toán gói tập - SmartGym</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+</head>
+
+
+<body class="min-h-screen
+             bg-slate-950
+             text-slate-100">
+
+<div class="max-w-5xl
+            mx-auto
+            px-4
+            sm:px-6
+            py-8">
+
+
+    <!-- HEADER -->
+
+    <div class="flex flex-col
+                md:flex-row
+                md:items-center
+                md:justify-between
+                gap-4
+                mb-8">
+
+        <div>
+
+            <div class="flex items-center gap-3">
+
+                <div class="w-12 h-12
+                            rounded-2xl
+                            bg-orange-500/10
+                            border border-orange-500/20
+                            flex items-center justify-center">
+
+                    <i class="fa-solid
+                              fa-building-columns
+                              text-orange-400
+                              text-xl"></i>
+
+                </div>
+
+                <div>
+
+                    <h1 class="text-2xl
+                               font-black">
+
+                        Thanh toán gói tập
+
+                    </h1>
+
+                    <p class="text-sm
+                              text-slate-400
+                              mt-1">
+
+                        Hóa đơn #@Model.Id
+
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <a asp-action="GoiTapCuaToi"
+           class="inline-flex
+                  items-center
+                  justify-center
+                  gap-2
+                  px-4 py-2.5
+                  rounded-xl
+                  bg-slate-800
+                  hover:bg-slate-700
+                  border border-slate-700
+                  text-sm
+                  font-semibold">
+
+            <i class="fa-solid fa-arrow-left"></i>
+
+            Quay lại
+
+        </a>
+
+    </div>
+
+
+    <!-- STATUS -->
+
+    @if (trangThai == "Đã thanh toán")
+    {
+        <div class="mb-6
+                    rounded-2xl
+                    border border-emerald-500/20
+                    bg-emerald-500/10
+                    p-5
+                    text-emerald-300">
+
+            <i class="fa-solid fa-circle-check me-2"></i>
+
+            Hóa đơn này đã được thanh toán.
+
+        </div>
+    }
+    else if (trangThai == "Chờ xác nhận")
+    {
+        <div class="mb-6
+                    rounded-2xl
+                    border border-blue-500/20
+                    bg-blue-500/10
+                    p-5
+                    text-blue-300">
+
+            <i class="fa-solid fa-hourglass-half me-2"></i>
+
+            Bạn đã gửi xác nhận chuyển khoản.
+            Vui lòng chờ lễ tân kiểm tra và xác nhận giao dịch.
+
+        </div>
+    }
+
+
+    <div class="grid grid-cols-1
+                lg:grid-cols-5
+                gap-6">
+
+
+        <!-- ================================================= -->
+        <!-- THÔNG TIN HÓA ĐƠN -->
+        <!-- ================================================= -->
+
+        <div class="lg:col-span-2">
+
+            <div class="rounded-3xl
+                        bg-slate-900
+                        border border-slate-800
+                        p-6
+                        h-full">
+
+                <p class="text-xs
+                          uppercase
+                          tracking-widest
+                          text-slate-500
+                          font-bold">
+
+                    THÔNG TIN ĐƠN HÀNG
+
+                </p>
+
+
+                <h2 class="text-2xl
+                           font-black
+                           mt-3">
+
+                    @(goi?.TenGoi ?? "Gói tập")
+
+                </h2>
+
+
+                <div class="space-y-4 mt-6">
+
+                    <div class="flex justify-between
+                                gap-4">
+
+                        <span class="text-slate-500">
+                            Hội viên
+                        </span>
+
+                        <span class="font-semibold
+                                     text-right">
+
+                            @(hoiVien?.HoTen ?? "Hội viên")
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="flex justify-between
+                                gap-4">
+
+                        <span class="text-slate-500">
+                            Mã gói
+                        </span>
+
+                        <span class="font-semibold">
+
+                            @(goi?.MaGoi ?? "--")
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="flex justify-between
+                                gap-4">
+
+                        <span class="text-slate-500">
+                            Thời hạn
+                        </span>
+
+                        <span class="font-semibold">
+
+                            @(goi?.ThoiHanNgay ?? 0) ngày
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="border-t
+                                border-slate-800
+                                pt-4
+                                flex justify-between
+                                gap-4">
+
+                        <span class="text-slate-400">
+                            Tổng thanh toán
+                        </span>
+
+                        <span class="text-2xl
+                                     font-black
+                                     text-orange-400">
+
+                            @Model.TongTien.ToString("N0")
+                            VNĐ
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- CHUYỂN KHOẢN -->
+        <!-- ================================================= -->
+
+        <div class="lg:col-span-3">
+
+            <div class="rounded-3xl
+                        bg-slate-900
+                        border border-orange-500/20
+                        p-6">
+
+                <div class="flex items-center
+                            gap-3 mb-6">
+
+                    <div class="w-10 h-10
+                                rounded-xl
+                                bg-orange-500/10
+                                flex items-center justify-center">
+
+                        <i class="fa-solid
+                                  fa-building-columns
+                                  text-orange-400"></i>
+
+                    </div>
+
+                    <div>
+
+                        <h2 class="text-xl
+                                   font-black">
+
+                            Chuyển khoản ngân hàng
+
+                        </h2>
+
+                        <p class="text-xs
+                                  text-slate-500
+                                  mt-1">
+
+                            Phương thức thanh toán duy nhất
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- BANK INFO -->
+
+                <div class="rounded-2xl
+                            bg-slate-950
+                            border border-slate-800
+                            p-5">
+
+                    <div class="grid grid-cols-1
+                                sm:grid-cols-2
+                                gap-4">
+
+                        <div>
+
+                            <p class="text-xs
+                                      text-slate-500">
+
+                                Ngân hàng
+
+                            </p>
+
+                            <p class="font-bold
+                                      mt-1">
+
+                                NGÂN HÀNG CỦA SMARTGYM
+
+                            </p>
+
+                        </div>
+
+
+                        <div>
+
+                            <p class="text-xs
+                                      text-slate-500">
+
+                                Số tài khoản
+
+                            </p>
+
+                            <p class="font-bold
+                                      mt-1
+                                      text-orange-400">
+
+                                VUI LÒNG CẤU HÌNH
+
+                            </p>
+
+                        </div>
+
+
+                        <div>
+
+                            <p class="text-xs
+                                      text-slate-500">
+
+                                Chủ tài khoản
+
+                            </p>
+
+                            <p class="font-bold
+                                      mt-1">
+
+                                SMARTGYM
+
+                            </p>
+
+                        </div>
+
+
+                        <div>
+
+                            <p class="text-xs
+                                      text-slate-500">
+
+                                Số tiền
+
+                            </p>
+
+                            <p class="font-black
+                                      mt-1
+                                      text-orange-400">
+
+                                @Model.TongTien.ToString("N0") VNĐ
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="mt-5">
+
+                        <p class="text-xs
+                                  text-slate-500">
+
+                            Nội dung chuyển khoản
+
+                        </p>
+
+                        <div class="mt-2
+                                    rounded-xl
+                                    bg-slate-900
+                                    border border-slate-700
+                                    px-4 py-3
+                                    font-bold
+                                    text-orange-300">
+
+                            SMARTGYM @Model.Id
+                            @(hoiVien?.MaHoiVien ?? "")
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- WARNING -->
+
+                <div class="mt-5
+                            rounded-2xl
+                            border border-yellow-500/20
+                            bg-yellow-500/5
+                            p-4">
+
+                    <div class="flex gap-3">
+
+                        <i class="fa-solid
+                                  fa-triangle-exclamation
+                                  text-yellow-400
+                                  mt-1"></i>
+
+                        <div>
+
+                            <p class="font-bold
+                                      text-yellow-300">
+
+                                Lưu ý
+
+                            </p>
+
+                            <p class="text-xs
+                                      leading-6
+                                      text-slate-400
+                                      mt-1">
+
+                                Vui lòng chuyển đúng số tiền và ghi đúng
+                                nội dung chuyển khoản.
+                                Gói tập chưa được kích hoạt ngay sau khi
+                                bạn chuyển khoản.
+                                Lễ tân cần kiểm tra giao dịch trước khi
+                                kích hoạt gói.
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- CONFIRM -->
+
+                @if (trangThai == "Chưa thanh toán")
+                {
+                    <form asp-action="XacNhanDaChuyenKhoan"
+                          method="post"
+                          class="mt-6">
+
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden"
+                               name="id"
+                               value="@Model.Id" />
+
+                        <button type="submit"
+                                onclick="return confirm('Bạn xác nhận đã chuyển khoản đúng số tiền cho hóa đơn này?');"
+                                class="w-full
+                                       py-4
+                                       rounded-2xl
+                                       bg-orange-500
+                                       hover:bg-orange-400
+                                       font-black
+                                       transition
+                                       shadow-lg
+                                       shadow-orange-500/10">
+
+                            <i class="fa-solid
+                                      fa-paper-plane me-2"></i>
+
+                            Tôi đã chuyển khoản
+
+                        </button>
+
+                    </form>
+                }
+                else if (trangThai == "Chờ xác nhận")
+                {
+                    <div class="mt-6
+                                rounded-2xl
+                                bg-blue-500/10
+                                border border-blue-500/20
+                                p-4
+                                text-center">
+
+                        <i class="fa-solid
+                                  fa-clock
+                                  text-blue-400
+                                  text-xl"></i>
+
+                        <p class="font-bold
+                                  text-blue-300
+                                  mt-2">
+
+                            Đang chờ lễ tân xác nhận
+
+                        </p>
+
+                    </div>
+                }
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="mt-6
+                text-center
+                text-xs
+                text-slate-600">
+
+        SmartGym • Thanh toán chuyển khoản
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

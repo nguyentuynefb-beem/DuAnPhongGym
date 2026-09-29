@@ -1,0 +1,104 @@
+﻿@{
+    ViewData["Title"] = "Đăng Ký Lịch Tập 1:1";
+}
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+<div class="max-w-3xl mx-auto my-8 px-4 font-sans">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
+
+        <!-- Header -->
+        <div class="border-b border-slate-800 pb-4 flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-black text-amber-400 uppercase tracking-wide flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-plus"></i>
+                    <span>Đăng Ký Lịch Tập Phụ Trách (1:1)</span>
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">Chọn HLV và khung giờ phù hợp. Yêu cầu sẽ được gửi tới HLV để duyệt.</p>
+            </div>
+            <a href="@Url.Action("Index", "User")" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl transition border border-slate-700">
+                <i class="fa-solid fa-arrow-left me-1"></i> Quay lại
+            </a>
+        </div>
+
+        <!-- Alert Notification -->
+        @if (TempData["Success"] != null)
+        {
+            <div class="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs rounded-xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-base"></i>
+                <span>@TempData["Success"]</span>
+            </div>
+        }
+
+        <form asp-controller="User"
+      asp-action="DatLich"
+      method="post"
+      class="space-y-6 text-xs">
+
+            <!-- 1. CHỌN HLV -->
+            <div>
+                <label class="block text-slate-300 font-bold mb-2 uppercase tracking-wider text-[11px]">
+                    <i class="fa-solid fa-user-ninja text-amber-400 me-1"></i> 1. Chọn Huấn Luyện Viên (PT)
+                </label>
+                <select name="maPt" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition">
+                    <option value="">-- Chọn HLV còn trống lịch --</option>
+                    @if (ViewBag.DanhSachPT != null)
+                    {
+                        foreach (var pt in ViewBag.DanhSachPT)
+                        {
+                            <option value="@pt.Id">HLV: @pt.HoTen (@pt.TenDangNhap)</option>
+                        }
+                    }
+                    else
+                    {
+                        <option value="pt_nguyenvanc">HLV: Nguyễn Văn C (Gym & Fitness)</option>
+                        <option value="pt_lethid">HLV: Lê Thị D (Yoga & Cardio)</option>
+                    }
+                </select>
+            </div>
+
+            <!-- 2. CHỌN NGÀY TẬP -->
+            <div>
+                <label class="block text-slate-300 font-bold mb-2 uppercase tracking-wider text-[11px]">
+                    <i class="fa-solid fa-calendar-day text-amber-400 me-1"></i> 2. Chọn Ngày Tập
+                </label>
+                <input type="date" name="ngayTap" value="@DateTime.Now.ToString("yyyy-MM-dd")" min="@DateTime.Now.ToString("yyyy-MM-dd")" required
+                       class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition" />
+            </div>
+
+            <!-- 3. CHỌN KHUNG GIỜ -->
+            <div>
+                <label class="block text-slate-300 font-bold mb-2 uppercase tracking-wider text-[11px]">
+                    <i class="fa-solid fa-clock text-amber-400 me-1"></i> 3. Chọn Khung Giờ Tập
+                </label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    @foreach (var timeSlot in new[] { "06:00 - 08:00", "08:00 - 10:00", "10:00 - 12:00", "14:00 - 16:00", "16:00 - 18:00", "18:00 - 20:00" })
+                    {
+                        <label class="cursor-pointer">
+                            <input type="radio" name="khungGio" value="@timeSlot" required class="peer hidden" />
+                            <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl text-center text-slate-300 peer-checked:border-amber-400 peer-checked:bg-amber-400/10 peer-checked:text-amber-400 font-mono font-bold hover:border-slate-700 transition shadow-sm">
+                                @timeSlot
+                            </div>
+                        </label>
+                    }
+                </div>
+            </div>
+
+            <!-- 4. GHI CHÚ NỘI DUNG -->
+            <div>
+                <label class="block text-slate-300 font-bold mb-2 uppercase tracking-wider text-[11px]">
+                    <i class="fa-solid fa-pen-to-square text-amber-400 me-1"></i> 4. Ghi Chú / Mục Tiêu Buổi Tập
+                </label>
+                <input type="text" name="noiDung" placeholder="Ví dụ: Tập Ngực & Tay sau / Siết mỡ bụng..."
+                       class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition" />
+            </div>
+
+            <!-- SUBMIT BUTTON -->
+            <button type="submit" class="w-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-slate-950 font-black py-4 rounded-xl transition shadow-lg shadow-amber-500/20 text-sm uppercase tracking-wide flex items-center justify-center gap-2">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>Gửi Yêu Cầu Đặt Lịch</span>
+            </button>
+        </form>
+    </div>
+</div>

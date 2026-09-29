@@ -1,0 +1,787 @@
+﻿@model IEnumerable<DuAnCuaToi.Models.NguoiDung>
+@{
+    Layout = null;
+    var memberCount = Model != null ? Model.Count() : 0;
+}
+
+<!DOCTYPE html>
+<html lang="vi" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard - Smart Gym AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            primary: { 500: '#f97316', 600: '#ea580c' }
+                        }
+                    }
+                }
+            }
+    </script>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 font-sans">
+
+    <div class="min-h-full flex flex-col">
+        <!-- TOP HEADER NAVBAR VỚI Ô TÌM KIẾM -->
+        <header class="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-6 sticky top-0 z-30">
+            <!-- Ô TÌM KIẾM -->
+            <form method="get"
+                  asp-controller="Admin"
+                  asp-action="Index"
+                  class="flex items-center flex-1 max-w-md">
+
+                <div class="relative w-full">
+
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+
+                    <input type="text"
+                           name="search"
+                           value="@ViewBag.Search"
+                           placeholder="Tìm hội viên hoặc gói tập..."
+                           class="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500 transition" />
+
+                </div>
+
+            </form>
+            @if (!string.IsNullOrWhiteSpace(ViewBag.Search))
+            {
+                <a asp-action="Index"
+                   class="ml-3 text-orange-400 text-xs hover:text-orange-300">
+                    Xóa
+                </a>
+            }
+
+            <!-- THÔNG TIN TÀI KHOẢN ADMIN -->
+            <div class="flex items-center space-x-4">
+                <button class="text-slate-400 hover:text-white text-sm p-2 rounded-lg bg-slate-800/50"><i class="fa-regular fa-moon"></i></button>
+                <button class="relative text-slate-400 hover:text-white text-sm p-2 rounded-lg bg-slate-800/50">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full"></span>
+                </button>
+                <div class="h-6 w-[1px] bg-slate-800"></div>
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center font-bold text-white text-xs shadow-md shadow-orange-500/20">
+                        AG
+                    </div>
+                    <div class="hidden sm:block text-left text-xs">
+                        <div class="font-bold text-white">AdminGym</div>
+                        <div class="text-[10px] text-slate-400">Quản trị viên</div>
+                    </div>
+                </div>
+                <a href="/" class="text-slate-400 hover:text-red-400 text-sm ml-2" title="Đăng xuất"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+            </div>
+        </header>
+
+        <!-- MAIN CONTAINER -->
+        <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+            <!-- THÔNG BÁO RESULT LƯU CSDL -->
+            @if (TempData["Success"] != null)
+            {
+                <div class="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-2xl text-xs flex items-center justify-between">
+                    <span class="flex items-center"><i class="fa-solid fa-circle-check me-2"></i>@TempData["Success"]</span>
+                    <button onclick="this.parentElement.remove()" class="text-emerald-400/60 hover:text-emerald-400"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="p-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl text-xs flex items-center justify-between">
+                    <span class="flex items-center"><i class="fa-solid fa-triangle-exclamation me-2"></i>@TempData["Error"]</span>
+                    <button onclick="this.parentElement.remove()" class="text-red-400/60 hover:text-red-400"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            }
+
+            <!-- DASHBOARD HEADER & NÚT TẠO MỚI -->
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Tổng Quan Hệ Thống</h1>
+                    <p class="text-xs text-slate-400 mt-1">Thống kê hoạt động kinh doanh và tương tác AI theo thời gian thực.</p>
+                </div>
+                                <div class="flex items-center gap-3">
+                    <a asp-controller="BaoCaoDoanhThu" asp-action="Index"
+                       class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-chart-line text-orange-400"></i>
+                        <span>Báo Cáo Doanh Thu (AI)</span>
+                    </a>
+                    <button onclick="toggleModal(true)" class="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-orange-500/20 flex items-center justify-center space-x-2 cursor-pointer">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Thêm Hội Viên Mới</span>
+                    </button>
+                </div>
+            </div>
+            `
+            <!-- 4 THẺ THỐNG KÊ TỔNG QUAN -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Thẻ 1 -->
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800/80 shadow-xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tổng Doanh Thu</span>
+                        <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm border border-emerald-500/20">
+                            <i class="fa-solid fa-wallet"></i>
+                        </div>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-black text-white">128.5M VNĐ</div>
+                    <div class="text-[11px] text-emerald-400 font-medium flex items-center">
+                        <i class="fa-solid fa-arrow-trend-up me-1"></i>
+                        <span>+15.4% <span class="text-slate-400 font-normal">so với tháng trước</span></span>
+                    </div>
+                </div>
+
+                <!-- Thẻ 2 -->
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800/80 shadow-xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tổng Đơn Hàng</span>
+                        <div class="w-9 h-9 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center text-sm border border-orange-500/20">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                        </div>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-black text-white">342</div>
+                    <div class="text-[11px] text-emerald-400 font-medium flex items-center">
+                        <i class="fa-solid fa-arrow-trend-up me-1"></i>
+                        <span>+8.2% <span class="text-slate-400 font-normal">đơn đăng ký gói mới</span></span>
+                    </div>
+                </div>
+
+                <!-- Thẻ 3 -->
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800/80 shadow-xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Số Người Dùng</span>
+                        <div class="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm border border-blue-500/20">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-black text-white">@memberCount</div>
+                    <div class="text-[11px] text-emerald-400 font-medium flex items-center">
+                        <i class="fa-solid fa-database me-1"></i>
+                        <span>Tài khoản trong CSDL SQL</span>
+                    </div>
+                </div>
+
+                <!-- Thẻ 4 -->
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800/80 shadow-xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tỷ Lệ Tăng Trưởng</span>
+                        <div class="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-sm border border-purple-500/20">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </div>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-black text-white">94.8%</div>
+                    <div class="text-[11px] text-emerald-400 font-medium flex items-center">
+                        <i class="fa-solid fa-arrow-trend-up me-1"></i>
+                        <span>+2.3% <span class="text-slate-400 font-normal">tỷ lệ giữ chân hội viên</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KHỐI BIỂU ĐỒ DOANH THU -->
+            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-base font-bold text-white">Biểu Đồ Doanh Thu Theo Tháng</h3>
+                        <p class="text-xs text-slate-400">Doanh thu tổng hợp từ các gói tập gym và dịch vụ HLV PT.</p>
+                    </div>
+                    <select class="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-orange-500">
+                        <option>Năm 2026</option>
+                        <option>Năm 2025</option>
+                    </select>
+                </div>
+                <div class="h-64 w-full">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <!-- BẢNG DANH SÁCH HỘI VIÊN LẤY TỪ CSDL SQL SERVER -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div>
+                        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-users text-amber-500"></i>
+                            <span>Danh Sách Tài Khoản Hệ Thống (CSDL SQL Server)</span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Quản lý tài khoản đăng nhập và hồ sơ hội viên lưu trữ trong CSDL</p>
+                    </div>
+                    <span class="text-xs bg-orange-500/10 text-orange-400 border border-orange-500/20 px-3 py-1 rounded-full font-semibold">
+                        Tổng: @memberCount tài khoản
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-800/60 uppercase text-[10px] tracking-wider text-slate-400">
+                            <tr>
+                                <th class="px-4 py-3">ID</th>
+                                <th class="px-4 py-3">Tên Đăng Nhập</th>
+                                <th class="px-4 py-3">Họ Và Tên</th>
+                                <th class="px-4 py-3">Vai Trò</th>
+                                <th class="px-4 py-3">Trạng Thái CSDL</th>
+                                <th class="px-4 py-3">Thao Tác / Phân Quyền</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            @if (Model != null)
+                            {
+                                @foreach (var item in Model)
+                                {
+                                    <tr class="hover:bg-slate-800/30 transition">
+                                        <td class="px-4 py-3 font-mono text-slate-400">#@item.Id</td>
+                                        <td class="px-4 py-3 font-bold text-white">@item.TenDangNhap</td>
+                                        <td class="px-4 py-3 text-amber-500 font-semibold">@item.HoTen</td>
+                                        <td class="px-4 py-3">
+                                            <span class="px-2 py-1 bg-slate-800 text-slate-300 rounded-lg text-[10px]">
+                                                @item.VaiTro
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <span class="px-2 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px]">
+                                                Đã lưu SQL ✓
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <form action="/Admin/UpdateRole" method="post" class="flex items-center space-x-2">
+                                                <input type="hidden" name="userId" value="@item.Id" />
+                                                <select name="newRole" class="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500">
+                                                    <option value="HoiVien" selected="@(item.VaiTro == "HoiVien")">Hội Viên</option>
+                                                    <option value="PT" selected="@(item.VaiTro == "PT")">HLV (PT)</option>
+                                                    <option value="LeTan" selected="@(item.VaiTro == "LeTan")">Lễ Tân</option>
+                                                    <option value="AdminGym" selected="@(item.VaiTro == "AdminGym")">Admin</option>
+                                                </select>
+                                                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-2.5 py-1 rounded-lg text-xs transition">
+                                                    Lưu
+                                                </button>
+                                                <button
+    type="button"
+    onclick="openDeleteUserModal(@item.Id,'@item.HoTen')"
+    class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg">
+
+    Xóa
+
+</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- KHU VỰC QUẢN LÝ GÓI TẬP -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-bold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-box-archive text-amber-500"></i>
+                        <span>Danh Sách Gói Tập</span>
+                    </h2>
+                    <button type="button" onclick="toggleGoiTapModal(true)" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center space-x-1 cursor-pointer">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Tạo Gói Tập Mới</span>
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-800/60 uppercase text-[10px] tracking-wider text-slate-400">
+                            <tr>
+                                <th class="px-4 py-3">Mã Gói</th>
+                                <th class="px-4 py-3">Tên Gói</th>
+                                <th class="px-4 py-3">Thời Hạn</th>
+                                <th class="px-4 py-3">Giá</th>
+                                <th class="px-4 py-3">Quyền Lợi & Dịch Vụ</th>
+                                <th class="px-4 py-3 text-center">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            @if (ViewBag.GoiTaps != null)
+                            {
+                                @foreach (var g in (List<DuAnCuaToi.Models.GoiTap>)ViewBag.GoiTaps)
+                                {
+                                    var dichVusStr = g.GoiTapDichVus != null ? string.Join(",", g.GoiTapDichVus.Select(x => x.DichVu?.TenDichVu)) : "";
+                                    <tr class="hover:bg-slate-800/30 transition">
+                                        <td class="px-4 py-3 font-mono font-bold text-amber-500">@g.MaGoi</td>
+                                        <td class="px-4 py-3 font-bold text-white">
+                                            @g.TenGoi
+                                            @if (g.IsKhuyenMai)
+                                            {
+                                                <span class="ml-2 px-1.5 py-0.5 bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded text-[9px]">Khuyến mãi</span>
+                                            }
+                                        </td>
+                                        <td class="px-4 py-3 text-slate-300">@g.ThoiHanNgay ngày</td>
+                                        <td class="px-4 py-3 font-semibold text-emerald-400">@g.Gia.ToString("N0")đ</td>
+                                        <td class="px-4 py-3 text-slate-400">
+                                            <div>@g.QuyenLoi</div>
+                                            @if (g.GoiTapDichVus != null && g.GoiTapDichVus.Any())
+                                            {
+                                                <div class="mt-1 flex flex-wrap gap-1">
+                                                    @foreach (var gd in g.GoiTapDichVus)
+                                                    {
+                                                        <span class="px-2 py-0.5 bg-slate-800 text-slate-300 border border-slate-700 rounded-md text-[10px]">
+                                                            ✓ @gd.DichVu?.TenDichVu
+                                                        </span>
+                                                    }
+                                                </div>
+                                            }
+                                        </td>
+                                        <td class="px-4 py-3 text-center">
+                                            <div class="flex items-center justify-center space-x-2">
+                                                <!-- NÚT SỬA GÓI TẬP -->
+                                                <button type="button"
+                                                        data-magoi="@g.MaGoi"
+                                                        data-tengoi="@g.TenGoi"
+                                                        data-thoihan="@g.ThoiHanNgay"
+                                                        data-gia="@g.Gia"
+                                                        data-quyenloi="@g.QuyenLoi"
+                                                        data-dichvus="@dichVusStr"
+                                                        onclick="openEditGoiTapModal(this)"
+                                                        class="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-xl transition"
+                                                        title="Chỉnh sửa gói tập">
+                                                    <i class="fa-solid fa-pen-to-square"></i>
+                                                </button>
+                                                <!-- NÚT XÓA GÓI TẬP -->
+                                                <button type="button"
+                                                        data-magoi="@g.MaGoi"
+                                                        data-tengoi="@g.TenGoi"
+                                                        onclick="openDeleteGoiTapModal(this)"
+                                                        class="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl transition"
+                                                        title="Xóa gói tập">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL TẠO GÓI TẬP MỚI -->
+    <div id="goiTapModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl text-left">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-plus-circle text-amber-500"></i>
+                    <span>Tạo Gói Tập Mới</span>
+                </h3>
+                <button onclick="toggleGoiTapModal(false)" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form action="/Admin/CreateGoiTap" method="post" class="space-y-3 text-xs">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Mã Gói</label>
+                        <input type="text" name="maGoi" required placeholder="GP007" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Tên Gói Tập</label>
+                        <input type="text" name="tenGoi" required placeholder="Gói VIP 12 Tháng" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Thời Hạn (Ngày)</label>
+                        <input type="number" name="thoiHanNgay" required placeholder="365" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Giá (VNĐ)</label>
+                        <input type="number" name="gia" required placeholder="5500000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-400 mb-1">Quyền Lợi Kèm Theo</label>
+                    <textarea name="quyenLoi" rows="2" placeholder="Tập không giới hạn, miễn phí tủ đồ..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-slate-400 mb-1 font-semibold">Dịch Vụ Đi Kèm (Chọn nhiều)</label>
+                    <div class="grid grid-cols-2 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800 max-h-40 overflow-y-auto">
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Yoga" class="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0">
+                            <span>Lớp Yoga</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Zumba" class="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0">
+                            <span>Lớp Zumba</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Boxing" class="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0">
+                            <span>Khu vực Boxing</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Sauna" class="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0">
+                            <span>Phòng Sauna / Xông hơi</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Kèm PT 1:1" class="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0">
+                            <span>Kèm PT 1:1</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Cardio & Gym" class="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0">
+                            <span>Tập Cardio & Gym</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Miễn phí Tủ đồ" class="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0">
+                            <span>Miễn phí Tủ đồ (Locker)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Miễn phí Nước uống" class="rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-0">
+                            <span>Miễn phí Nước uống</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex space-x-3 pt-3">
+                    <button type="button" onclick="toggleGoiTapModal(false)" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl transition">Hủy</button>
+                    <button type="submit" class="w-1/2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold py-2.5 rounded-xl transition shadow-lg shadow-amber-500/20">Lưu Gói Tập</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL SỬA GÓI TẬP -->
+    <div id="editGoiTapModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl text-left">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-pen-to-square text-blue-500"></i>
+                    <span>Chỉnh Sửa Gói Tập</span>
+                </h3>
+                <button onclick="toggleEditModal(false)" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form action="/Admin/EditGoiTap" method="post" class="space-y-3 text-xs">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Mã Gói (Không thay đổi)</label>
+                        <input type="text" id="edit_maGoi" name="maGoi" readonly class="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-3 py-2 text-amber-500 font-mono font-bold focus:outline-none cursor-not-allowed" />
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Tên Gói Tập</label>
+                        <input type="text" id="edit_tenGoi" name="tenGoi" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Thời Hạn (Ngày)</label>
+                        <input type="number" id="edit_thoiHanNgay" name="thoiHanNgay" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Giá (VNĐ)</label>
+                        <input type="number" id="edit_gia" name="gia" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-400 mb-1">Quyền Lợi Kèm Theo</label>
+                    <textarea id="edit_quyenLoi" name="quyenLoi" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-slate-400 mb-1 font-semibold">Dịch Vụ Đi Kèm (Chọn nhiều)</label>
+                    <div class="grid grid-cols-2 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800 max-h-40 overflow-y-auto" id="edit_dichVuContainer">
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Yoga" class="edit-dv-cb rounded border-slate-700 bg-slate-900 text-blue-500 focus:ring-0">
+                            <span>Lớp Yoga</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Zumba" class="edit-dv-cb rounded border-slate-700 bg-slate-900 text-blue-500 focus:ring-0">
+                            <span>Lớp Zumba</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Boxing" class="edit-dv-cb rounded border-slate-700 bg-slate-900 text-blue-500 focus:ring-0">
+                            <span>Khu vực Boxing</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Sauna" class="edit-dv-cb rounded border-slate-700 bg-slate-900 text-blue-500 focus:ring-0">
+                            <span>Phòng Sauna / Xông hơi</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Kèm PT 1:1" class="edit-dv-cb rounded border-slate-700 bg-slate-900 text-blue-500 focus:ring-0">
+                            <span>Kèm PT 1:1</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Cardio & Gym" class="edit-dv-cb rounded border-slate-700 bg-slate-900 text-blue-500 focus:ring-0">
+                            <span>Tập Cardio & Gym</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Miễn phí Tủ đồ" class="edit-dv-cb rounded border-slate-700 bg-slate-900 text-blue-500 focus:ring-0">
+                            <span>Miễn phí Tủ đồ (Locker)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-300 cursor-pointer text-xs hover:text-white">
+                            <input type="checkbox" name="quyenLoiList" value="Miễn phí Nước uống" class="edit-dv-cb rounded border-slate-700 bg-slate-900 text-blue-500 focus:ring-0">
+                            <span>Miễn phí Nước uống</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex space-x-3 pt-3">
+                    <button type="button" onclick="toggleEditModal(false)" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl transition">Hủy</button>
+                    <button type="submit" class="w-1/2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-2.5 rounded-xl transition shadow-lg shadow-blue-500/20">Cập Nhật Gói Tập</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL XÁC NHẬN XÓA GÓI TẬP -->
+    <div id="deleteGoiTapModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center">
+            <div class="w-12 h-12 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto border border-rose-500/20 text-xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+
+            <div>
+                <h3 class="text-base font-bold text-white">Xác Nhận Xóa Gói Tập</h3>
+                <p class="text-xs text-slate-400 mt-1">
+                    Bạn có chắc chắn muốn xóa gói tập <span id="delete_tenGoi" class="text-rose-400 font-bold"></span> (<span id="delete_maGoi_display" class="font-mono text-amber-500"></span>) không? Hành động này không thể hoàn tác!
+                </p>
+            </div>
+
+            <form action="/Admin/DeleteGoiTap" method="post" class="pt-2">
+                <input type="hidden" id="delete_maGoi" name="maGoi" />
+                <div class="flex space-x-3">
+                    <button type="button" onclick="toggleDeleteModal(false)" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold py-2.5 rounded-xl transition">Hủy Bỏ</button>
+                    <button type="submit" class="w-1/2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2.5 rounded-xl transition shadow-lg shadow-rose-600/20">Xóa Ngay</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL POPUP FORM THÊM HỘI VIÊN MỚI -->
+    <div id="addMemberModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-user-plus text-orange-500"></i>
+                    <span>Tạo Tài Khoản Hội Viên Mới</span>
+                </h3>
+                <button onclick="toggleModal(false)" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form action="/Admin/CreateMember" method="post" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Tên Đăng Nhập (SĐT / Username)</label>
+                    <input type="text" name="username" required placeholder="hoivien01" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-orange-500" />
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Mật Khẩu</label>
+                    <input type="password" name="password" required value="123456" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-orange-500" />
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Họ Và Tên</label>
+                    <input type="text" name="fullName" required placeholder="Nguyễn Văn A" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-orange-500" />
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Mục Tiêu Tập Luyện (Dành cho AI)</label>
+                    <input type="text" name="goal" placeholder="Tăng cơ giảm mỡ" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-orange-500" />
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Thời Gian Rảnh (Dành cho AI)</label>
+                    <input type="text" name="timeAvailable" placeholder="Chiều T2, T4, T6 (17h-19h)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-orange-500" />
+                </div>
+
+                <div class="flex space-x-3 pt-3">
+                    <button type="button" onclick="toggleModal(false)" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl transition">Hủy</button>
+                    <button type="submit" class="w-1/2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold py-2.5 rounded-xl transition shadow-lg shadow-orange-500/20">Lưu Vào CSDL SQL</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="deleteUserModal"
+     class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50">
+
+    <div class="bg-slate-900 p-6 rounded-xl w-96">
+
+        <h2 class="text-xl font-bold text-white">
+            Xóa người dùng
+        </h2>
+
+        <p class="mt-4 text-slate-300">
+
+            Bạn chắc chắn muốn xóa
+
+            <span id="deleteUserName"
+                  class="text-red-500 font-bold">
+            </span>
+
+            ?
+
+        </p>
+
+        <form action="/Admin/DeleteUser"
+              method="post">
+
+            <input
+                type="hidden"
+                id="deleteUserId"
+                name="userId"/>
+
+            <div class="flex justify-end gap-3 mt-6">
+
+                <button
+                    type="button"
+                    onclick="closeDeleteUserModal()"
+                    class="bg-gray-600 px-4 py-2 rounded">
+
+                    Hủy
+
+                </button>
+
+                <button
+                    type="submit"
+                    class="bg-red-600 px-4 py-2 rounded">
+
+                    Xóa
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+    <!-- SCRIPT RENDER BIỂU ĐỒ & BẬT/TẮT MODAL -->
+    <script>
+            function toggleModal(show) {
+                const modal = document.getElementById('addMemberModal');
+                if (show) modal.classList.remove('hidden');
+                else modal.classList.add('hidden');
+            }
+
+            function toggleGoiTapModal(show) {
+                const modal = document.getElementById('goiTapModal');
+                if (show) modal.classList.remove('hidden');
+                else modal.classList.add('hidden');
+            }
+
+            function toggleEditModal(show) {
+                const modal = document.getElementById('editGoiTapModal');
+                if (show) modal.classList.remove('hidden');
+                else modal.classList.add('hidden');
+            }
+
+            function toggleDeleteModal(show) {
+                const modal = document.getElementById('deleteGoiTapModal');
+                if (show) modal.classList.remove('hidden');
+                else modal.classList.add('hidden');
+            }
+
+            // Mở Modal Edit và gán dữ liệu từ thuộc tính data-*
+            function openEditGoiTapModal(btn) {
+                const maGoi = btn.getAttribute('data-magoi');
+                const tenGoi = btn.getAttribute('data-tengoi');
+                const thoiHan = btn.getAttribute('data-thoihan');
+                const gia = btn.getAttribute('data-gia');
+                const quyenLoi = btn.getAttribute('data-quyenloi');
+                const dichVusStr = btn.getAttribute('data-dichvus') || '';
+
+                document.getElementById('edit_maGoi').value = maGoi;
+                document.getElementById('edit_tenGoi').value = tenGoi;
+                document.getElementById('edit_thoiHanNgay').value = thoiHan;
+                document.getElementById('edit_gia').value = gia;
+                document.getElementById('edit_quyenLoi').value = quyenLoi;
+
+                // Xử lý tick các checkbox dịch vụ đi kèm
+                const dichVusArr = dichVusStr.split(',').map(s => s.trim());
+                const checkboxes = document.querySelectorAll('.edit-dv-cb');
+                checkboxes.forEach(cb => {
+                    cb.checked = dichVusArr.includes(cb.value);
+                });
+
+                toggleEditModal(true);
+            }
+
+            // Mở Modal Xóa và gán dữ liệu
+            function openDeleteGoiTapModal(btn) {
+                const maGoi = btn.getAttribute('data-magoi');
+                const tenGoi = btn.getAttribute('data-tengoi');
+
+                document.getElementById('delete_maGoi').value = maGoi;
+                document.getElementById('delete_maGoi_display').textContent = maGoi;
+                document.getElementById('delete_tenGoi').textContent = tenGoi;
+
+                toggleDeleteModal(true);
+            }
+
+            // Vẽ biểu đồ doanh thu tương tác với Chart.js
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+            gradient.addColorStop(0, 'rgba(249, 115, 22, 0.4)');
+            gradient.addColorStop(1, 'rgba(249, 115, 22, 0.0)');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9'],
+                    datasets: [{
+                        label: 'Doanh Thu (VNĐ)',
+                        data: [60000000, 72000000, 88000000, 94000000, 110000000, 118000000, 128500000],
+                        borderColor: '#f97316',
+                        borderWidth: 3,
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#f97316',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: {
+                                color: '#94a3b8',
+                                callback: function(value) { return (value / 1000000) + 'M'; }
+                            }
+                        }
+                    }
+                }
+            });
+            function openDeleteUserModal(id,name)
+{
+    document.getElementById("deleteUserId").value=id;
+
+    document.getElementById("deleteUserName").innerText=name;
+
+    document.getElementById("deleteUserModal")
+            .classList.remove("hidden");
+
+    document.getElementById("deleteUserModal")
+            .classList.add("flex");
+}
+
+function closeDeleteUserModal()
+{
+    document.getElementById("deleteUserModal")
+            .classList.remove("flex");
+
+    document.getElementById("deleteUserModal")
+            .classList.add("hidden");
+}
+    </script>
+</body>
+</html>

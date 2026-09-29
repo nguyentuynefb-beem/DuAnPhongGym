@@ -1,0 +1,244 @@
+﻿@model DuAnCuaToi.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Trang chủ - Hệ Thống Quản Lý Gym Tích Hợp AI";
+    Layout = "_Layout";
+}
+
+<style>
+    .hero-section {
+        background: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.85)), url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1200') center/cover no-repeat;
+        min-height: 85vh;
+        color: #fff;
+        display: flex;
+        align-items: center;
+    }
+
+    .text-gradient-primary {
+        background: linear-gradient(45deg, #ff5722, #ff9800);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .card-login {
+        background: rgba(255, 255, 255, 0.95);
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .feature-box {
+        transition: transform 0.3s ease;
+        border-radius: 12px;
+    }
+
+        .feature-box:hover {
+            transform: translateY(-8px);
+        }
+
+    .ai-badge {
+        background-color: #7928ca;
+        color: white;
+        font-size: 0.8rem;
+        padding: 4px 12px;
+        border-radius: 20px;
+    }
+</style>
+
+<!-- HERO SECTION: GIỚI THIỆU + FORM ĐĂNG NHẬP -->
+<section class="hero-section py-5">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <!-- Cột trái: Thông tin giới thiệu trung tâm -->
+            <div class="col-lg-7">
+                <span class="ai-badge fw-bold mb-3 d-inline-block">
+                    <i class="bi bi-cpu-fill me-1"></i> TÍCH HỢP TRÍ TUỆ NHÂN TẠO AI
+                </span>
+                <h1 class="display-4 fw-extrabold mb-3">
+                    TRUNG TÂM THỂ HÌNH <br />
+                    <span class="text-gradient-primary">SMART GYM CENTER</span>
+                </h1>
+                <p class="lead text-light opacity-90 mb-4">
+                    Giải pháp quản lý và tập luyện thông minh đột phá. Tối ưu vận hành phòng tập, nâng cao trải nghiệm hội viên nhờ hệ thống trợ lý AI cá nhân hóa lịch tập và tự động nhắc lịch.
+                </p>
+
+                <div class="row g-3 text-center mb-4">
+                    <div class="col-4">
+                        <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary">
+                            <h3 class="fw-bold text-warning mb-0">100%</h3>
+                            <small class="text-muted">Lịch tập tự động</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary">
+                            <h3 class="fw-bold text-warning mb-0">24/7</h3>
+                            <small class="text-muted">Hỗ trợ Hội viên</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-secondary">
+                            <h3 class="fw-bold text-warning mb-0">AI</h3>
+                            <small class="text-muted">Tóm tắt tiến độ</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cột phải: Form Đăng nhập trực tiếp -->
+            <div class="col-lg-5">
+                <div class="card card-login p-4 text-dark">
+                    <div class="card-body">
+                        <div class="text-center mb-4">
+                            <h3 class="fw-bold mb-1">Đăng Nhập System</h3>
+                            <p class="text-muted small">Dành cho Quản lý, Lễ tân, HLV & Hội viên</p>
+                        </div>
+
+                        @{
+                            var successMsg = TempData["SuccessMessage"] ?? TempData["Success"];
+                        }
+                        @if (successMsg != null)
+                        {
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                @successMsg
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
+
+                        @if (TempData["Error"] != null)
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                @TempData["Error"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
+
+                        <form asp-controller="Home" asp-action="Login" method="post">
+                            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                            <div class="form-floating mb-3">
+                                <input asp-for="Username" class="form-control" placeholder="admin / hoivien" />
+                                <label asp-for="Username"></label>
+                                <span asp-validation-for="Username" class="text-danger small"></span>
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <input asp-for="Password" class="form-control" type="password" placeholder="Mật khẩu" />
+                                <label asp-for="Password"></label>
+                                <span asp-validation-for="Password" class="text-danger small"></span>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="form-check">
+                                    <input asp-for="RememberMe" class="form-check-input" />
+                                    <label asp-for="RememberMe" class="form-check-label small"></label>
+                                </div>
+                                <a href="#" class="text-decoration-none small text-muted">Quên mật khẩu?</a>
+                            </div>
+
+                            <button type="submit" class="btn btn-warning w-100 py-3 fw-bold text-uppercase shadow-sm">
+                                Đăng Nhập Ngay
+                            </button>
+
+                            <div class="text-center mt-3">
+                                <span class="small text-muted">Chưa có tài khoản?</span>
+                                <button type="button" class="btn btn-link p-0 text-decoration-none fw-bold small ms-1 text-warning" data-bs-toggle="modal" data-bs-target="#registerModal">
+                                    Đăng ký ngay
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SECTION TÍNH NĂNG NỔI BẬT AI -->
+<section class="py-5 bg-light text-dark">
+    <div class="container py-4">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">TÍNH NĂNG AI ĐỘT PHÁ</h2>
+            <p class="text-muted">Hệ thống trợ lý thông minh đồng hành cùng Quản lý và Hội viên</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm p-4 feature-box">
+                    <div class="text-warning mb-3 fs-1"><i class="bi bi-calendar-week"></i></div>
+                    <h5 class="fw-bold">Gợi Ý Lịch Tập Cá Nhân</h5>
+                    <p class="text-muted small mb-0">
+                        AI dựa trên mục tiêu (tăng cơ/giảm mỡ), thời gian rảnh và thể trạng hiện tại để xuất lịch tập 1 tuần tham khảo.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm p-4 feature-box">
+                    <div class="text-warning mb-3 fs-1"><i class="bi bi-chat-dots"></i></div>
+                    <h5 class="fw-bold">Nhắc Lịch & Gia Hạn</h5>
+                    <p class="text-muted small mb-0">
+                        Tự động khởi tạo tin nhắn cá nhân hóa nhắc nhở lịch tập cá nhân và thông báo gói tập sắp hết hạn.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm p-4 feature-box">
+                    <div class="text-warning mb-3 fs-1"><i class="bi bi-graph-up-arrow"></i></div>
+                    <h5 class="fw-bold">Tóm Tắt Tiến Độ</h5>
+                    <p class="text-muted small mb-0">
+                        Phân tích lịch sử điểm danh và ghi chú chuyên môn từ HLV để tổng hợp báo cáo tiến trình tập luyện ngắn gọn.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER & CẢNH BÁO KHUYẾN CÁO Y TẾ -->
+<footer class="bg-dark text-light py-4 border-top border-secondary">
+    <div class="container text-center">
+        <p class="mb-2 text-muted small">
+            &copy; 2026 Smart Gym Center Management System. Tất cả quyền được bảo lưu.
+        </p>
+        <div class="alert alert-dark border border-secondary text-warning d-inline-block p-2 px-3 mb-0 small">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            <strong>Lưu ý về AI:</strong> Các đề xuất lịch tập từ AI chỉ mang tính chất tham khảo, không thay thế tư vấn y tế hoặc huấn luyện chuyên môn.
+        </div>
+    </div>
+</footer>
+
+<!-- MODAL ĐĂNG KÝ TÀI KHOẢN HỘI VIÊN -->
+<div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white border-bottom border-secondary">
+                <h5 class="modal-title fw-bold text-warning" id="registerModalLabel">
+                    <i class="bi bi-person-plus-fill me-2"></i>Đăng Ký Hội Viên Mới
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-dark">
+                <form asp-controller="Home" asp-action="Register" method="post">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Họ Và Tên</label>
+                        <input type="text" name="fullName" required placeholder="Nguyễn Văn A" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Tên Đăng Nhập / SĐT</label>
+                        <input type="text" name="username" required placeholder="0987654321" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Mật Khẩu</label>
+                        <input type="password" name="password" required placeholder="••••••••" class="form-control" />
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="submit" class="btn btn-warning w-100 py-2.5 fw-bold text-uppercase shadow-sm">
+                            TẠO TÀI KHOẢN HỘI VIÊN
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

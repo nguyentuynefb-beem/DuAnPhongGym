@@ -1,0 +1,100 @@
+@model DuAnCuaToi.ViewModels.PTMemberHistoryViewModel
+
+@{
+    ViewData["Title"] = "Lịch sử hội viên";
+}
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h3>Hồ sơ hội viên - @Model.HoTen (@Model.MaHoiVien)</h3>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <canvas id="ptMemberChart" height="120"></canvas>
+            </div>
+
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Ngày đo</th>
+                        <th>Chiều cao (cm)</th>
+                        <th>Cân nặng (kg)</th>
+                        <th>BMI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.LichSu)
+                    {
+                        <tr>
+                            <td>@item.NgayDo.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@(item.ChieuCao?.ToString() ?? "-")</td>
+                            <td>@(item.CanNang?.ToString() ?? "-")</td>
+                            <td>@item.BMI</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        (function () {
+            const data = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.LichSu.Select(x => new { x.NgayDo, x.CanNang, x.ChieuCao, BMI = x.BMI }))); 
+            const labels = data.slice().reverse().map(d => new Date(d.NgayDo).toLocaleDateString());
+            const weights = data.slice().reverse().map(d => d.CanNang ?? 0);
+            const bmis = data.slice().reverse().map(d => d.BMI ?? 0);
+
+            const ctx = document.getElementById('ptMemberChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Cân nặng (kg)',
+                            data: weights,
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40,167,69,0.1)',
+                            yAxisID: 'y',
+                            tension: 0.2,
+                            fill: true
+                        },
+                        {
+                            label: 'BMI',
+                            data: bmis,
+                            borderColor: '#007bff',
+                            backgroundColor: 'rgba(0,123,255,0.1)',
+                            yAxisID: 'y1',
+                            tension: 0.2,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    stacked: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'Cân nặng (kg)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            title: { display: true, text: 'BMI' }
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
+}

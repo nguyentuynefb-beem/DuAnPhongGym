@@ -1,0 +1,292 @@
+@model DuAnCuaToi.Models.RevenueReportViewModel
+@using System.Linq
+@using System.Globalization
+@{
+    Layout = null;
+}
+@functions {
+    string FormatVnd(decimal v) => v.ToString("N0", CultureInfo.InvariantCulture);
+}
+<!DOCTYPE html>
+<html lang="vi" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Báo Cáo Doanh Thu - Smart Gym AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 font-sans">
+<div class="min-h-full flex flex-col">
+
+    <header class="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-6 sticky top-0 z-30">
+        <a asp-controller="Admin" asp-action="Index" class="flex items-center gap-2 text-slate-300 hover:text-white text-sm">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Quay lại Tổng Quan</span>
+        </a>
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center font-bold text-white text-xs shadow-md shadow-orange-500/20">AG</div>
+            <div class="hidden sm:block text-left text-xs">
+                <div class="font-bold text-white">AdminGym</div>
+                <div class="text-[10px] text-slate-400">Quản trị viên</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+        <div>
+            <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-orange-400"></i>
+                Báo Cáo & Tóm Tắt Doanh Thu (AI)
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Số liệu tổng hợp trực tiếp từ cơ sở dữ liệu SQL Server, có thể xuất Word / PDF.</p>
+        </div>
+
+        <!-- BỘ LỌC -->
+        <form method="get" asp-controller="BaoCaoDoanhThu" asp-action="Index"
+              class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl flex flex-wrap items-end gap-4">
+            <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Loại kỳ</label>
+                <select name="loaiKy" class="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-orange-500">
+                    <option value="Ngay" selected="@(Model.LoaiKy == "Ngay")">Theo ngày</option>
+                    <option value="Thang" selected="@(Model.LoaiKy == "Thang")">Theo tháng</option>
+                    <option value="Nam" selected="@(Model.LoaiKy == "Nam")">Theo năm</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Từ ngày</label>
+                <input type="date" name="tuNgay" value="@Model.TuNgay.ToString("yyyy-MM-dd")"
+                       class="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-orange-500" />
+            </div>
+            <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Đến ngày</label>
+                <input type="date" name="denNgay" value="@Model.DenNgay.ToString("yyyy-MM-dd")"
+                       class="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-orange-500" />
+            </div>
+            <button type="submit" class="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-lg shadow-orange-500/20">
+                <i class="fa-solid fa-filter me-1"></i> Lọc dữ liệu
+            </button>
+        </form>
+
+        <!-- THẺ THỐNG KÊ -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800/80 shadow-xl space-y-2">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tổng Doanh Thu</span>
+                <div class="text-xl sm:text-2xl font-black text-white">@FormatVnd(Model.TongDoanhThu) VNĐ</div>
+            </div>
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800/80 shadow-xl space-y-2">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tổng Số Hóa Đơn</span>
+                <div class="text-xl sm:text-2xl font-black text-white">@Model.TongSoHoaDon</div>
+            </div>
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800/80 shadow-xl space-y-2">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">TB Mỗi Kỳ</span>
+                <div class="text-xl sm:text-2xl font-black text-white">@FormatVnd(Model.DoanhThuTrungBinhMoiKy) VNĐ</div>
+            </div>
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800/80 shadow-xl space-y-2">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tăng Trưởng So Kỳ Trước</span>
+                @if (Model.TyLeTangTruongSoVoiKyTruoc.HasValue)
+                {
+                    var tyLe = Model.TyLeTangTruongSoVoiKyTruoc.Value;
+                    <div class="text-xl sm:text-2xl font-black @(tyLe >= 0 ? "text-emerald-400" : "text-red-400")">@(tyLe >= 0 ? "+" : "")@tyLe.ToString("0.0")%</div>
+                }
+                else
+                {
+                    <div class="text-sm text-slate-500 mt-2">Chưa đủ dữ liệu so sánh</div>
+                }
+            </div>
+        </div>
+
+        <!-- BIỂU ĐỒ -->
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+            <h3 class="text-base font-bold text-white">Biểu Đồ Doanh Thu Theo Kỳ (dữ liệu thật từ CSDL)</h3>
+            <div class="h-64 w-full">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+        <!-- AI TÓM TẮT -->
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-robot text-orange-400"></i> Tóm Tắt & Phân Tích Doanh Thu (AI)
+                    </h3>
+                    <p class="text-xs text-slate-400">AI chỉ phân tích trên số liệu thật đã tổng hợp ở trên, không tự bịa số liệu.</p>
+                </div>
+                <button id="btnTaoTomTat" onclick="taoTomTatAI()"
+                        class="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-lg shadow-orange-500/20">
+                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Tạo tóm tắt AI
+                </button>
+            </div>
+
+            <div id="aiSummaryLoading" class="hidden text-xs text-slate-400 flex items-center gap-2">
+                <i class="fa-solid fa-spinner fa-spin"></i> AI đang phân tích số liệu, vui lòng chờ...
+            </div>
+
+            <div id="aiSummaryResult" class="hidden text-sm text-slate-200 bg-slate-950/60 border border-slate-800 rounded-xl p-4 whitespace-pre-line leading-relaxed"></div>
+        </div>
+
+        <!-- BẢNG CHI TIẾT -->
+        <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl p-6 space-y-4">
+            <h3 class="text-base font-bold text-white">Chi Tiết Doanh Thu Theo Kỳ</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-slate-800/60 uppercase text-[10px] tracking-wider text-slate-400">
+                        <tr>
+                            <th class="px-4 py-3">Kỳ</th>
+                            <th class="px-4 py-3">Số Hóa Đơn</th>
+                            <th class="px-4 py-3">Doanh Thu (VNĐ)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800">
+                        @if (!Model.Buckets.Any())
+                        {
+                            <tr><td colspan="3" class="px-4 py-6 text-center text-slate-500">Không có dữ liệu doanh thu trong khoảng thời gian này.</td></tr>
+                        }
+                        @foreach (var b in Model.Buckets)
+                        {
+                            <tr class="hover:bg-slate-800/30 transition">
+                                <td class="px-4 py-3 font-semibold text-white">@b.Ky</td>
+                                <td class="px-4 py-3">@b.SoHoaDon</td>
+                                <td class="px-4 py-3 text-emerald-400 font-semibold">@FormatVnd(b.DoanhThu)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TOP GÓI TẬP -->
+        @if (Model.TopGoiTap.Any())
+        {
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl p-6 space-y-4">
+                <h3 class="text-base font-bold text-white">Gói Tập Đóng Góp Doanh Thu Cao Nhất</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-800/60 uppercase text-[10px] tracking-wider text-slate-400">
+                            <tr>
+                                <th class="px-4 py-3">Gói Tập</th>
+                                <th class="px-4 py-3">Lượt Bán</th>
+                                <th class="px-4 py-3">Doanh Thu (VNĐ)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            @foreach (var g in Model.TopGoiTap)
+                            {
+                                <tr class="hover:bg-slate-800/30 transition">
+                                    <td class="px-4 py-3 font-semibold text-amber-400">@g.TenGoi</td>
+                                    <td class="px-4 py-3">@g.SoLuotBan</td>
+                                    <td class="px-4 py-3 text-emerald-400 font-semibold">@FormatVnd(g.DoanhThu)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <!-- XUẤT FILE -->
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+            <h3 class="text-base font-bold text-white mb-4">Xuất Báo Cáo</h3>
+            <div class="flex flex-wrap gap-3">
+                <form method="post" asp-controller="BaoCaoDoanhThu" asp-action="XuatDocx">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="loaiKy" value="@Model.LoaiKy" />
+                    <input type="hidden" name="tuNgay" value="@Model.TuNgay.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="denNgay" value="@Model.DenNgay.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="aiSummary" id="aiSummaryDocx" value="" />
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition flex items-center gap-2">
+                        <i class="fa-solid fa-file-word"></i> Xuất Word (.docx)
+                    </button>
+                </form>
+                <form method="post" asp-controller="BaoCaoDoanhThu" asp-action="XuatPdf">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="loaiKy" value="@Model.LoaiKy" />
+                    <input type="hidden" name="tuNgay" value="@Model.TuNgay.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="denNgay" value="@Model.DenNgay.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="aiSummary" id="aiSummaryPdf" value="" />
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition flex items-center gap-2">
+                        <i class="fa-solid fa-file-pdf"></i> Xuất PDF
+                    </button>
+                </form>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-3">Mẹo: bấm "Tạo tóm tắt AI" trước để phần tóm tắt được đưa vào file xuất ra.</p>
+        </div>
+
+        <form id="afForm" class="hidden">@Html.AntiForgeryToken()</form>
+
+    </main>
+</div>
+
+<script>
+    const revenueLabels = [@Html.Raw(string.Join(",", Model.Buckets.Select(b => "\"" + b.Ky + "\"")))];
+    const revenueValues = [@Html.Raw(string.Join(",", Model.Buckets.Select(b => b.DoanhThu.ToString(CultureInfo.InvariantCulture))))];
+
+    new Chart(document.getElementById('revenueChart'), {
+        type: 'bar',
+        data: {
+            labels: revenueLabels,
+            datasets: [{
+                label: 'Doanh thu (VNĐ)',
+                data: revenueValues,
+                backgroundColor: 'rgba(249, 115, 22, 0.6)',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+                x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+            }
+        }
+    });
+
+    async function taoTomTatAI() {
+        const btn = document.getElementById('btnTaoTomTat');
+        const loading = document.getElementById('aiSummaryLoading');
+        const result = document.getElementById('aiSummaryResult');
+
+        btn.disabled = true;
+        loading.classList.remove('hidden');
+        result.classList.add('hidden');
+
+        try {
+            const token = document.querySelector('#afForm input[name="__RequestVerificationToken"]').value;
+
+            const formData = new FormData();
+            formData.append('loaiKy', '@Model.LoaiKy');
+            formData.append('tuNgay', '@Model.TuNgay.ToString("yyyy-MM-dd")');
+            formData.append('denNgay', '@Model.DenNgay.ToString("yyyy-MM-dd")');
+            formData.append('__RequestVerificationToken', token);
+
+            const res = await fetch('/BaoCaoDoanhThu/TaoTomTatAI', { method: 'POST', body: formData });
+            const raw = await res.text();
+            let json;
+
+            try {
+                json = JSON.parse(raw);
+            } catch {
+                throw new Error(`Máy chủ trả dữ liệu không hợp lệ. HTTP ${res.status}`);
+            }
+
+            if (res.ok && json.success) {
+                result.innerText = json.data;
+                document.getElementById('aiSummaryDocx').value = json.data;
+                document.getElementById('aiSummaryPdf').value = json.data;
+            } else {
+                result.innerText = json.message || `Không thể tạo tóm tắt AI. HTTP ${res.status}`;
+            }
+        } catch (e) {
+            result.innerText = e.message || 'Có lỗi xảy ra khi kết nối máy chủ.';
+        } finally {
+            result.classList.remove('hidden');
+            loading.classList.add('hidden');
+            btn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>

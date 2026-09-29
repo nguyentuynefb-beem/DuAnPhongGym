@@ -1,0 +1,1735 @@
+@using Microsoft.AspNetCore.Http
+@using System.Net
+@using DuAnCuaToi.Models
+
+@{
+    Layout = null;
+    var currentUser = ViewBag.CurrentUser as NguoiDung;
+    var tenHienThi = currentUser?.HoTen ?? Context.Session.GetString("UserName") ?? "Hội viên";
+    var username = currentUser?.TenDangNhap ?? Context.Session.GetString("Username") ?? "";
+    var avatarUrl = $"https://ui-avatars.com/api/?name={WebUtility.UrlEncode(tenHienThi)}&background=ea580c&color=fff&size=128";
+    var goiTapDangHoatDong = ViewBag.GoiTapDangHoatDong as DangKyGoiTap;
+    var thongBaoMoiNhat = ViewBag.ThongBaoMoiNhat as ThongBao;
+
+    int soThongBaoChuaDoc = 0;
+    if (ViewBag.SoThongBaoChuaDoc != null)
+        int.TryParse(ViewBag.SoThongBaoChuaDoc.ToString(), out soThongBaoChuaDoc);
+
+    var soNgayConLai = goiTapDangHoatDong == null
+        ? 0
+        : Math.Max(0, (goiTapDangHoatDong.NgayHetHan.Date - DateTime.Now.Date).Days);
+
+    var ngayHomNay = DateTime.Now.ToString("yyyy-MM-dd");
+}
+
+<!DOCTYPE html>
+<html lang="vi" class="h-full bg-slate-950">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#020617" />
+    <title>SmartGym - Trang hội viên</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 400: '#fb923c', 500: '#f97316', 600: '#ea580c', 700: '#c2410c' }
+                    },
+                    boxShadow: { glow: '0 0 35px rgba(249,115,22,.12)' }
+                }
+            }
+        };
+    </script>
+    <style>
+        html { scroll-behavior: smooth; }
+        body {
+            background:
+                radial-gradient(circle at 15% 0%, rgba(249,115,22,.08), transparent 28%),
+                radial-gradient(circle at 90% 10%, rgba(59,130,246,.06), transparent 24%),
+                #020617;
+        }
+        .glass { background: rgba(15,23,42,.82); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+        .card { border:1px solid rgba(51,65,85,.8); background:rgba(15,23,42,.88); border-radius:1rem; box-shadow:0 12px 30px rgba(0,0,0,.16); }
+        .nav-item { display:flex; align-items:center; gap:.75rem; padding:.72rem .85rem; border-radius:.75rem; color:#94a3b8; transition:.2s ease; }
+        .nav-item:hover { color:#fff; background:#1e293b; }
+        .nav-item.active { color:#fff; background:rgba(249,115,22,.12); border:1px solid rgba(249,115,22,.2); }
+        .nav-icon { width:2rem; height:2rem; display:flex; align-items:center; justify-content:center; border-radius:.6rem; background:#1e293b; flex-shrink:0; }
+        .section-label { font-size:.68rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#64748b; margin:1.25rem .75rem .55rem; }
+        .field { width:100%; background:#0f172a; border:1px solid #334155; border-radius:.75rem; padding:.7rem .8rem; color:#f8fafc; outline:none; }
+        .field:focus { border-color:#f97316; box-shadow:0 0 0 3px rgba(249,115,22,.12); }
+        .status-dot { width:.55rem; height:.55rem; border-radius:999px; background:#22c55e; box-shadow:0 0 0 4px rgba(34,197,94,.10); }
+    </style>
+</head>
+
+<body class="min-h-full text-slate-100 antialiased">
+
+<header class="lg:hidden sticky top-0 z-50 glass border-b border-slate-800">
+    <div class="px-4 py-3 flex items-center justify-between">
+        <a href="@Url.Action("Index", "User")" class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                <i class="fa-solid fa-dumbbell text-white"></i>
+            </div>
+            <div>
+                <div class="font-extrabold tracking-wide">SMART<span class="text-orange-500">GYM</span></div>
+                <div class="text-[10px] text-slate-500">MEMBER PORTAL</div>
+            </div>
+        </a>
+        <button type="button" onclick="toggleMobileMenu()" class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-slate-300">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+    </div>
+
+    <div id="mobileMenu" class="hidden border-t border-slate-800 px-4 pb-4">
+        <nav class="pt-3 space-y-1">
+            <a href="@Url.Action("Index", "User")" class="nav-item active"><span class="nav-icon text-orange-400"><i class="fa-solid fa-house"></i></span><span>Trang chủ</span></a>
+            <a href="@Url.Action("GoiTapCuaToi", "User")" class="nav-item"><span class="nav-icon text-orange-400"><i class="fa-solid fa-id-card"></i></span><span>Gói tập của tôi</span></a>
+            <a href="@Url.Action("LichTapCuaToi", "User")" class="nav-item"><span class="nav-icon text-blue-400"><i class="fa-solid fa-calendar-days"></i></span><span>Lịch tập của tôi</span></a>
+            <a href="@Url.Action("LichSuDiemDanh", "User")" class="nav-item"><span class="nav-icon text-emerald-400"><i class="fa-solid fa-qrcode"></i></span><span>Lịch sử điểm danh</span></a>
+            <a href="@Url.Action("LichSuThanhToan", "User")" class="nav-item"><span class="nav-icon text-amber-400"><i class="fa-solid fa-receipt"></i></span><span>Lịch sử thanh toán</span></a>
+            <a href="@Url.Action("HealthProfile", "User")" class="nav-item"><span class="nav-icon text-emerald-400"><i class="fa-solid fa-heart-pulse"></i></span><span>Hồ sơ sức khỏe</span></a>
+            <a href="@Url.Action("ThongBao", "User")" class="nav-item">
+                <span class="nav-icon text-violet-400 relative"><i class="fa-solid fa-bell"></i>
+                    @if (soThongBaoChuaDoc > 0) { <span class="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-[9px] font-bold flex items-center justify-center text-white">@soThongBaoChuaDoc</span> }
+                </span><span>Thông báo</span>
+            </a>
+            <a href="@Url.Action("EditProfile", "User")" class="nav-item"><span class="nav-icon text-pink-400"><i class="fa-solid fa-user-pen"></i></span><span>Thông tin cá nhân</span></a>
+            <a href="@Url.Action("HealthProfile", "User")" class="nav-item"><span class="nav-icon text-emerald-400"><i class="fa-solid fa-heart-pulse"></i></span><span>Hồ sơ sức khỏe</span></a>
+            <a href="@Url.Action("Logout", "Home")" class="nav-item text-red-400 hover:text-red-300 hover:bg-red-500/10 mt-2"><span class="nav-icon text-red-400"><i class="fa-solid fa-right-from-bracket"></i></span><span>Đăng xuất</span></a>
+        </nav>
+        <a href="@Url.Action("TroLyAI", "User")"
+   class="group rounded-2xl
+          border border-violet-500/20
+          bg-slate-900
+          p-4
+          hover:border-violet-500/50
+          hover:bg-slate-800
+          transition">
+
+    <div class="w-10 h-10
+                rounded-xl
+                bg-violet-500/10
+                text-violet-400
+                flex items-center
+                justify-center">
+
+        <i class="fa-solid fa-brain"></i>
+
+    </div>
+
+    <p class="mt-3
+              text-sm
+              font-bold
+              text-white">
+
+        Trợ lý AI
+
+    </p>
+
+    <p class="mt-1
+              text-[11px]
+              text-slate-500">
+
+        InBody • Lịch tập • Hỏi đáp
+
+    </p>
+
+</a>
+    </div>
+</header>
+<div class="min-h-screen lg:flex">
+
+<aside class="hidden lg:flex lg:w-72 xl:w-80 shrink-0 flex-col border-r border-slate-800 bg-slate-950/95">
+    <div class="sticky top-0 h-screen flex flex-col">
+        <div class="px-6 py-5 border-b border-slate-800">
+            <a href="@Url.Action("Index", "User")" class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20"><i class="fa-solid fa-dumbbell text-white text-lg"></i></div>
+                <div>
+                    <div class="text-xl font-black tracking-wide">SMART<span class="text-orange-500">GYM</span></div>
+                    <div class="text-[10px] font-semibold tracking-[.22em] text-slate-500">MEMBER PORTAL</div>
+                </div>
+            </a>
+        </div>
+
+        <div class="px-4 pt-5">
+            <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <img src="@avatarUrl" alt="Ảnh đại diện" class="w-11 h-11 rounded-xl ring-2 ring-orange-500/40" />
+                        <span class="absolute -right-1 -bottom-1 status-dot border-2 border-slate-900"></span>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="font-bold text-sm text-white truncate">@tenHienThi</p>
+                        <p class="text-xs text-slate-500 truncate">@(string.IsNullOrWhiteSpace(username) ? "Hội viên" : "@" + username)</p>
+                    </div>
+                </div>
+
+                @if (goiTapDangHoatDong?.GoiTap != null)
+                {
+                    <div class="mt-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3">
+                        <div class="flex items-center justify-between"><span class="text-[10px] uppercase tracking-wider text-emerald-400 font-bold">Gói đang hoạt động</span><i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i></div>
+                        <p class="mt-1 text-sm font-bold text-white truncate">@goiTapDangHoatDong.GoiTap.TenGoi</p>
+                        <p class="text-[11px] text-slate-400 mt-1">Còn @soNgayConLai ngày</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="mt-4 rounded-xl bg-red-500/10 border border-red-500/20 p-3">
+                        <p class="text-xs font-semibold text-red-400"><i class="fa-solid fa-circle-xmark mr-1"></i>Chưa có gói tập đang hoạt động</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto px-4 py-3">
+            <div class="section-label">Tổng quan</div>
+            <a href="@Url.Action("Index", "User")" class="nav-item active"><span class="nav-icon text-orange-400"><i class="fa-solid fa-house"></i></span><span class="text-sm font-semibold">Trang chủ</span></a>
+
+            <div class="section-label">Tài khoản & dịch vụ</div>
+            <a href="@Url.Action("TroLyAI", "User")" class="nav-item">
+    <span class="nav-icon text-violet-400">
+        <i class="fa-solid fa-robot"></i>
+    </span>
+    <span class="text-sm">Trợ lý AI</span>
+</a>
+            <a href="@Url.Action("GoiTapCuaToi", "User")" class="nav-item"><span class="nav-icon text-orange-400"><i class="fa-solid fa-id-card"></i></span><span class="text-sm">Gói tập của tôi</span></a>
+            <a href="@Url.Action("LichTapCuaToi", "User")" class="nav-item"><span class="nav-icon text-blue-400"><i class="fa-solid fa-calendar-days"></i></span><span class="text-sm">Lịch tập của tôi</span></a>
+            <a href="@Url.Action("LichSuDiemDanh", "User")" class="nav-item"><span class="nav-icon text-emerald-400"><i class="fa-solid fa-qrcode"></i></span><span class="text-sm">Lịch sử điểm danh</span></a>
+            <a href="@Url.Action("LichSuThanhToan", "User")" class="nav-item"><span class="nav-icon text-amber-400"><i class="fa-solid fa-receipt"></i></span><span class="text-sm">Lịch sử thanh toán</span></a>
+            <a href="@Url.Action("ThongBao", "User")" class="nav-item">
+                <span class="nav-icon text-violet-400 relative"><i class="fa-solid fa-bell"></i>
+                    @if (soThongBaoChuaDoc > 0) { <span class="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-500 text-[9px] font-bold flex items-center justify-center text-white">@soThongBaoChuaDoc</span> }
+                </span>
+                <span class="text-sm flex-1">Thông báo</span>
+                @if (soThongBaoChuaDoc > 0) { <span class="text-[10px] text-red-400 font-bold">@soThongBaoChuaDoc mới</span> }
+            </a>
+
+            <div class="section-label">Cá nhân</div>
+            <a href="@Url.Action("EditProfile", "User")" class="nav-item"><span class="nav-icon text-pink-400"><i class="fa-solid fa-user-pen"></i></span><span class="text-sm">Thông tin cá nhân</span></a>
+                <a href="@Url.Action("TroLyAI", "User")"
+   class="group rounded-2xl
+          border border-violet-500/20
+          bg-violet-500/5
+          p-4
+          hover:border-violet-400/50
+          hover:bg-violet-500/10
+          transition">
+
+    <div class="w-10 h-10
+                rounded-xl
+                bg-violet-500/10
+                text-violet-400
+                flex items-center
+                justify-center">
+
+        <i class="fa-solid fa-robot"></i>
+
+    </div>
+
+    <p class="mt-3
+              text-sm
+              font-bold
+              text-white">
+
+        AI Assistant
+
+    </p>
+
+    <p class="mt-1
+              text-[11px]
+              text-slate-500">
+
+        Hỏi SmartGym AI
+
+    </p>
+
+</a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-800">
+            <a href="@Url.Action("Logout", "Home")" class="flex items-center justify-center gap-2 w-full rounded-xl bg-slate-900 border border-slate-800 hover:border-red-500/30 hover:bg-red-500/10 text-slate-400 hover:text-red-400 py-2.5 text-sm font-semibold transition">
+                <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+            </a>
+        </div>
+    </div>
+</aside>
+
+<main class="flex-1 min-w-0">
+    <header class="hidden lg:flex sticky top-0 z-40 h-16 items-center justify-between px-6 xl:px-8 glass border-b border-slate-800">
+        <div>
+            <p class="text-xs text-slate-500">TRANG HỘI VIÊN</p>
+            <h1 class="text-base font-bold text-white">Xin chào, @tenHienThi</h1>
+        </div>
+
+        <div class="flex items-center gap-3">
+            @if (goiTapDangHoatDong?.GoiTap != null)
+            {
+                <a href="@Url.Action("GoiTapCuaToi", "User")" class="hidden xl:flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+                    <i class="fa-solid fa-circle-check"></i>@goiTapDangHoatDong.GoiTap.TenGoi<span class="text-emerald-500/60">•</span>Còn @soNgayConLai ngày
+                </a>
+            }
+            <a href="@Url.Action("ThongBao", "User")" class="relative w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 flex items-center justify-center text-slate-300 hover:text-orange-400 transition">
+                <i class="fa-solid fa-bell"></i>
+                @if (soThongBaoChuaDoc > 0) { <span class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">@soThongBaoChuaDoc</span> }
+            </a>
+            <a href="@Url.Action("EditProfile", "User")" class="flex items-center gap-2 pl-3 border-l border-slate-800">
+                <img src="@avatarUrl" alt="Ảnh đại diện" class="w-9 h-9 rounded-xl ring-1 ring-slate-700" />
+                <div class="hidden xl:block"><p class="text-xs font-semibold text-white">@tenHienThi</p><p class="text-[10px] text-slate-500">Hội viên</p></div>
+            </a>
+        </div>
+    </header>
+
+    <div class="max-w-[1500px] mx-auto p-4 sm:p-6 xl:p-8 space-y-6">
+
+        <section class="relative overflow-hidden rounded-3xl border border-orange-500/20 bg-gradient-to-br from-orange-950/50 via-slate-900 to-slate-900 p-5 sm:p-7 shadow-glow">
+            <div class="absolute -right-20 -top-20 w-72 h-72 rounded-full bg-orange-500/10 blur-3xl"></div>
+            <div class="relative flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+                <div>
+                    <div class="inline-flex items-center gap-2 rounded-full bg-orange-500/10 border border-orange-500/20 px-3 py-1 text-[11px] font-bold text-orange-400 uppercase tracking-wider">
+                        <i class="fa-solid fa-bolt"></i> SmartGym Dashboard
+                    </div>
+                    <h2 class="mt-4 text-2xl sm:text-3xl font-black tracking-tight text-white">Chào mừng trở lại, @tenHienThi</h2>
+                    <p class="mt-2 max-w-2xl text-sm text-slate-400 leading-6">Quản lý gói tập, lịch tập, điểm danh và thanh toán của bạn trong một giao diện duy nhất.</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 min-w-0 xl:min-w-[360px]">
+                    <div class="rounded-2xl bg-slate-950/60 border border-slate-800 p-4">
+                        <p class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Ngày hôm nay</p>
+                        <p class="mt-1 text-lg font-black text-white">@DateTime.Now.ToString("dd/MM/yyyy")</p>
+                        <p class="text-xs text-slate-500">@DateTime.Now.ToString("dddd", new System.Globalization.CultureInfo("vi-VN"))</p>
+                    </div>
+                    <div class="rounded-2xl bg-slate-950/60 border border-slate-800 p-4">
+                        <p class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Trạng thái</p>
+                        @if (goiTapDangHoatDong?.GoiTap != null)
+                        {
+                            <p class="mt-1 text-lg font-black text-emerald-400">Đang hoạt động</p>
+                            <p class="text-xs text-slate-500">Còn @soNgayConLai ngày</p>
+                        }
+                        else
+                        {
+                            <p class="mt-1 text-lg font-black text-red-400">Chưa kích hoạt</p>
+                            <p class="text-xs text-slate-500">Vui lòng đăng ký gói</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="mb-3">
+                <h2 class="text-lg font-bold text-white">Truy cập nhanh</h2>
+                <p class="text-xs text-slate-500 mt-1">Các chức năng thường dùng của hội viên</p>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-3">
+                <a href="@Url.Action("GoiTapCuaToi", "User")" class="group rounded-2xl border border-slate-800 bg-slate-900 p-4 hover:border-orange-500/40 hover:bg-slate-800 transition"><div class="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center"><i class="fa-solid fa-id-card"></i></div><p class="mt-3 text-sm font-bold text-white">Gói tập</p><p class="mt-1 text-[11px] text-slate-500">Thời hạn & trạng thái</p></a>
+                <a href="@Url.Action("LichTapCuaToi", "User")" class="group rounded-2xl border border-slate-800 bg-slate-900 p-4 hover:border-blue-500/40 hover:bg-slate-800 transition"><div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center"><i class="fa-solid fa-calendar-days"></i></div><p class="mt-3 text-sm font-bold text-white">Lịch tập</p><p class="mt-1 text-[11px] text-slate-500">Lịch đã đăng ký</p></a>
+                <a href="@Url.Action("LichSuDiemDanh", "User")" class="group rounded-2xl border border-slate-800 bg-slate-900 p-4 hover:border-emerald-500/40 hover:bg-slate-800 transition"><div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center"><i class="fa-solid fa-qrcode"></i></div><p class="mt-3 text-sm font-bold text-white">Điểm danh</p><p class="mt-1 text-[11px] text-slate-500">Lịch sử ra vào</p></a>
+                <a href="@Url.Action("LichSuThanhToan", "User")" class="group rounded-2xl border border-slate-800 bg-slate-900 p-4 hover:border-amber-500/40 hover:bg-slate-800 transition"><div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center"><i class="fa-solid fa-receipt"></i></div><p class="mt-3 text-sm font-bold text-white">Thanh toán</p><p class="mt-1 text-[11px] text-slate-500">Hóa đơn & giao dịch</p></a>
+                <a href="@Url.Action("ThongBao", "User")" class="group rounded-2xl border border-slate-800 bg-slate-900 p-4 hover:border-violet-500/40 hover:bg-slate-800 transition"><div class="relative w-10 h-10 rounded-xl bg-violet-500/10 text-violet-400 flex items-center justify-center"><i class="fa-solid fa-bell"></i>@if (soThongBaoChuaDoc > 0) { <span class="absolute -top-1 -right-1 min-w-5 h-5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">@soThongBaoChuaDoc</span> }</div><p class="mt-3 text-sm font-bold text-white">Thông báo</p><p class="mt-1 text-[11px] text-slate-500">@(soThongBaoChuaDoc > 0 ? $"{soThongBaoChuaDoc} chưa đọc" : "Không có tin mới")</p></a>
+                <a href="@Url.Action("EditProfile", "User")" class="group rounded-2xl border border-slate-800 bg-slate-900 p-4 hover:border-pink-500/40 hover:bg-slate-800 transition"><div class="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center"><i class="fa-solid fa-user-pen"></i></div><p class="mt-3 text-sm font-bold text-white">Cá nhân</p><p class="mt-1 text-[11px] text-slate-500">Cập nhật hồ sơ</p></a>
+                <a href="@Url.Action("HealthProfile", "User")" class="group rounded-2xl border border-slate-800 bg-slate-900 p-4 hover:border-emerald-500/40 hover:bg-slate-800 transition"><div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center"><i class="fa-solid fa-heart-pulse"></i></div><p class="mt-3 text-sm font-bold text-white">Hồ sơ sức khỏe</p><p class="mt-1 text-[11px] text-slate-500">Nhập chỉ số & lịch sử</p></a>
+            </div>
+        </section>
+
+        <section class="card overflow-visible ai-coach-card">
+            <div class="px-5 py-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-400 flex items-center justify-center"><i class="fa-solid fa-bell"></i></div>
+                    <div><h2 class="font-bold text-white">Thông báo mới nhất</h2><p class="text-[11px] text-slate-500">Cập nhật từ hệ thống SmartGym</p></div>
+                </div>
+                <a href="@Url.Action("ThongBao", "User")" class="text-xs font-semibold text-orange-400 hover:text-orange-300">Xem tất cả <i class="fa-solid fa-arrow-right ml-1"></i></a>
+            </div>
+
+            <div class="p-5">
+                @if (thongBaoMoiNhat != null)
+                {
+                    <div class="flex items-start gap-4">
+                        <div class="mt-0.5 w-9 h-9 rounded-lg @(thongBaoMoiNhat.DaDoc ? "bg-slate-800 text-slate-400" : "bg-orange-500/10 text-orange-400") flex items-center justify-center shrink-0"><i class="fa-solid fa-bell"></i></div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2"><p class="text-sm font-semibold text-white">Thông báo hệ thống</p>@if (!thongBaoMoiNhat.DaDoc) { <span class="rounded-full bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 text-[9px] font-bold text-orange-400">MỚI</span> }</div>
+                            <p class="mt-1 text-sm text-slate-300 leading-6">@thongBaoMoiNhat.NoiDung</p>
+                            <p class="mt-2 text-[11px] text-slate-500"><i class="fa-regular fa-clock mr-1"></i>@thongBaoMoiNhat.NgayTao.ToString("HH:mm - dd/MM/yyyy")</p>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="py-5 text-center">
+                        <div class="mx-auto w-12 h-12 rounded-2xl bg-slate-800 text-slate-500 flex items-center justify-center"><i class="fa-regular fa-bell-slash"></i></div>
+                        <p class="mt-3 text-sm font-semibold text-slate-300">Chưa có thông báo mới</p>
+                        <p class="mt-1 text-xs text-slate-500">Các thông báo về lịch tập và thanh toán sẽ xuất hiện tại đây.</p>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 2xl:grid-cols-3 gap-6">
+
+            <div class="2xl:col-span-2 space-y-6">
+
+                <section class="card overflow-hidden">
+                    <div class="px-5 sm:px-6 py-5 border-b border-slate-800">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                                <div><h2 class="font-bold text-white">AI sinh lịch tập tham khảo</h2><p class="text-[11px] text-slate-500">FR9 • Gemini Engine</p></div>
+                            </div>
+                            <span class="inline-flex w-fit items-center gap-2 rounded-full bg-slate-800 border border-slate-700 px-3 py-1 text-[10px] font-semibold text-slate-400"><i class="fa-solid fa-robot text-orange-400"></i>AI RECOMMENDATION</span>
+                        </div>
+                    </div>
+
+                    <div class="p-5 sm:p-6 space-y-5">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div><label for="aiGoal" class="block mb-2 text-xs font-semibold text-slate-400">Mục tiêu tập luyện</label><select id="aiGoal" class="field text-sm"><option value="Tăng cơ & Giảm mỡ">Tăng cơ & Giảm mỡ</option><option value="Giảm cân cấp tốc">Giảm cân cấp tốc</option><option value="Tăng thể lực Cardio">Tăng thể lực Cardio</option></select></div>
+                            <div><label for="aiTime" class="block mb-2 text-xs font-semibold text-slate-400">Thời gian rảnh</label><input id="aiTime" type="text" value="Chiều T2, T4, T6 (17h-19h)" class="field text-sm" /></div>
+                            <div><label for="aiLevel" class="block mb-2 text-xs font-semibold text-slate-400">Trình độ</label><select id="aiLevel" class="field text-sm"><option value="Mới bắt đầu (Beginner)">Mới bắt đầu (Beginner)</option><option value="Đã tập 6 tháng">Đã tập 6 tháng</option></select></div>
+                        </div>
+
+                        <button type="button"
+        id="btnAISchedule"
+        onclick="generateAISchedule()"
+        class="w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 py-3 text-sm font-bold text-white transition shadow-lg shadow-orange-500/10">
+
+    <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>
+    Sinh lịch tập 1 tuần
+</button>
+
+                        <div id="aiLoading" class="hidden rounded-xl border border-orange-500/20 bg-orange-500/5 px-4 py-3 text-xs text-orange-300"><i class="fa-solid fa-spinner fa-spin mr-2"></i>AI đang tạo lịch tham khảo...</div>
+
+                        <div id="aiOutput"
+                             class="w-full min-w-0">
+
+                            <div class="rounded-2xl border border-orange-500/20
+                                bg-slate-950/80">
+
+                                <!-- Header -->
+                                <div class="px-5 py-4
+                                    border-b border-slate-800
+                                    flex items-center justify-between">
+
+                                    <div class="flex items-center gap-3">
+
+                                        <div class="w-10 h-10 rounded-xl
+                                            bg-orange-500/10
+                                            text-orange-400
+                                            flex items-center justify-center">
+
+                                            <i class="fa-solid fa-calendar-days"></i>
+
+                                        </div>
+
+                                        <div>
+
+                                            <h3 class="font-bold text-white">
+                                                Lịch tập AI Coach
+                                            </h3>
+
+                                            <p class="text-xs text-slate-500">
+                                                Kế hoạch được tạo dựa trên lựa chọn của bạn
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+
+                                    <span class="text-[10px]
+                                        uppercase tracking-wider
+                                        px-3 py-1 rounded-full
+                                        border border-orange-500/20
+                                        text-orange-400">
+
+                                        AI Recommendation
+
+                                    </span>
+
+                                </div>
+
+
+                                <!-- AI Content -->
+
+                                <div class="p-5">
+
+                                    <div id="aiScheduleList"
+                                         class="text-sm
+                                        text-slate-300
+                                        leading-7
+                                        whitespace-pre-line">
+                                    </div>
+
+
+                                    <!-- AI Warning -->
+
+                                    <div class="mt-5
+                                        rounded-xl
+                                        border border-amber-500/20
+                                        bg-amber-500/5
+                                        p-4">
+
+                                        <div class="flex gap-3">
+
+                                            <i class="fa-solid fa-triangle-exclamation
+                                            text-amber-400 mt-1"></i>
+
+                                            <div>
+
+                                                <p class="text-xs
+                                                    font-bold
+                                                    text-amber-400">
+
+                                                    Lưu ý an toàn
+
+                                                </p>
+
+                                                <p class="text-xs
+                                                    text-slate-400
+                                                    mt-1
+                                                    leading-6">
+
+                                                    Nội dung do AI tạo chỉ mang tính
+                                                    tham khảo. AI không thay thế HLV,
+                                                    bác sĩ hoặc chuyên gia phù hợp.
+                                                    Nếu bạn có vấn đề sức khỏe hoặc
+                                                    đang điều trị, hãy trao đổi với
+                                                    người có chuyên môn trước khi tập.
+
+                                                </p>
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </section>
+
+                <!-- =========================================================
+     FR10 - SMARTGYM AI ASSISTANT
+     ========================================================= -->
+<section class="card overflow-hidden">
+
+    <div class="px-5 sm:px-6 py-5 border-b border-slate-800">
+
+        <div class="flex flex-col
+                    md:flex-row
+                    md:items-center
+                    md:justify-between
+                    gap-3">
+
+            <div class="flex items-center gap-3">
+
+                <div class="w-10 h-10 rounded-xl
+                            bg-violet-500/10
+                            text-violet-400
+                            flex items-center
+                            justify-center">
+
+                    <i class="fa-solid fa-robot"></i>
+
+                </div>
+
+                <div>
+
+                    <h2 class="font-bold text-white">
+                        SmartGym AI Assistant
+                    </h2>
+
+                    <p class="text-[11px] text-slate-500">
+                        FR10 • Trợ lý AI cá nhân hóa
+                    </p>
+
+                </div>
+
+            </div>
+
+            <span class="inline-flex
+                         w-fit
+                         items-center
+                         gap-2
+                         rounded-full
+                         bg-violet-500/10
+                         border border-violet-500/20
+                         px-3 py-1
+                         text-[10px]
+                         font-semibold
+                         text-violet-400">
+
+                <i class="fa-solid fa-brain"></i>
+
+                AI ASSISTANT
+
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <div class="p-5 sm:p-6">
+
+        <div id="aiChatBox"
+             class="h-[320px]
+                    overflow-y-auto
+                    rounded-2xl
+                    bg-slate-950/70
+                    border border-slate-800
+                    p-4
+                    space-y-3">
+
+            <div class="flex justify-start">
+
+                <div class="max-w-[90%]
+                            rounded-xl
+                            bg-violet-500/10
+                            border border-violet-500/20
+                            p-3">
+
+                    <p class="text-xs
+                              text-violet-300
+                              leading-5">
+
+                        Xin chào @tenHienThi.
+
+                        Tôi có thể hỗ trợ bạn về:
+
+                        • Gói tập hiện tại
+                        • Giá và các gói tập SmartGym
+                        • Lịch tập
+                        • Điểm danh
+                        • Thanh toán
+                        • Tiến độ tập luyện
+                        • Thông tin dịch vụ
+
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="mt-4">
+
+            <div class="flex gap-2">
+
+                <input id="aiChatQuestion"
+                       type="text"
+                       maxlength="1000"
+                       class="field text-sm"
+                       placeholder="Ví dụ: Gói tập hiện tại của tôi còn bao nhiêu ngày?" />
+
+                <button type="button"
+                        id="btnAIChat"
+                        onclick="sendAIChat()"
+                        class="w-12
+                               shrink-0
+                               rounded-xl
+                               bg-violet-600
+                               hover:bg-violet-500
+                               text-white
+                               flex
+                               items-center
+                               justify-center
+                               transition">
+
+                    <i class="fa-solid fa-paper-plane"></i>
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="mt-4 grid
+                    grid-cols-1
+                    sm:grid-cols-2
+                    lg:grid-cols-4
+                    gap-2">
+
+            <button type="button"
+                    onclick="askQuickAI('Gói tập hiện tại của tôi còn bao nhiêu ngày?')"
+                    class="rounded-xl
+                           border border-slate-800
+                           bg-slate-900
+                           hover:bg-slate-800
+                           px-3 py-2
+                           text-left
+                           text-[11px]
+                           text-slate-400
+                           hover:text-white">
+
+                <i class="fa-solid fa-id-card text-orange-400 mr-1"></i>
+
+                Gói của tôi còn bao lâu?
+
+            </button>
+
+
+            <button type="button"
+                    onclick="askQuickAI('SmartGym hiện đang có những gói tập nào và giá bao nhiêu?')"
+                    class="rounded-xl
+                           border border-slate-800
+                           bg-slate-900
+                           hover:bg-slate-800
+                           px-3 py-2
+                           text-left
+                           text-[11px]
+                           text-slate-400
+                           hover:text-white">
+
+                <i class="fa-solid fa-tags text-emerald-400 mr-1"></i>
+
+                Các gói tập hiện có?
+
+            </button>
+
+
+            <button type="button"
+                    onclick="askQuickAI('Lịch tập gần đây của tôi như thế nào?')"
+                    class="rounded-xl
+                           border border-slate-800
+                           bg-slate-900
+                           hover:bg-slate-800
+                           px-3 py-2
+                           text-left
+                           text-[11px]
+                           text-slate-400
+                           hover:text-white">
+
+                <i class="fa-solid fa-calendar-days text-blue-400 mr-1"></i>
+
+                Lịch tập của tôi?
+
+            </button>
+
+
+            <button type="button"
+                    onclick="askQuickAI('Tóm tắt tình hình tập luyện gần đây của tôi.')"
+                    class="rounded-xl
+                           border border-slate-800
+                           bg-slate-900
+                           hover:bg-slate-800
+                           px-3 py-2
+                           text-left
+                           text-[11px]
+                           text-slate-400
+                           hover:text-white">
+
+                <i class="fa-solid fa-chart-line text-violet-400 mr-1"></i>
+
+                Tóm tắt tiến độ?
+
+            </button>
+
+        </div>
+
+
+        <div class="mt-4 rounded-xl
+                    border border-amber-500/20
+                    bg-amber-500/5
+                    p-3">
+
+            <p class="text-[10px]
+                      text-amber-300
+                      leading-5">
+
+                <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+
+                <strong>Cảnh báo:</strong>
+                AI chỉ cung cấp thông tin và lời khuyên mang tính tham khảo.
+                AI không thay thế HLV, bác sĩ hoặc chuyên gia y tế.
+                Không sử dụng AI để tự chẩn đoán bệnh hoặc quyết định điều trị.
+
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+                <section class="card overflow-hidden">
+                    <div class="px-5 sm:px-6 py-5 border-b border-slate-800">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center"><i class="fa-solid fa-calendar-plus"></i></div>
+                            <div><h2 class="font-bold text-white">Đăng ký lịch tập mới</h2><p class="text-[11px] text-slate-500">FR6 • Lưu trực tiếp vào cơ sở dữ liệu</p></div>
+                        </div>
+                    </div>
+
+                    <div class="p-5 sm:p-6">
+                        @if (TempData["Success"] != null)
+                        {
+                            <div class="mb-5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400"><i class="fa-solid fa-circle-check mr-2"></i>@TempData["Success"]</div>
+                        }
+
+                        <form action="@Url.Action("DatLich", "User")" method="post" class="space-y-5">
+                            @Html.AntiForgeryToken()
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold text-slate-400">HLV / PT</label>
+                                    <select name="maPt" required class="field text-sm">
+                                        <option value="">-- Chọn HLV --</option>
+                                        @if (ViewBag.DanhSachPT != null)
+                                        {
+                                            foreach (var pt in ViewBag.DanhSachPT)
+                                            {
+                                                <option value="@pt.Id">@pt.HoTen</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold text-slate-400">Ngày tập</label>
+                                    <input type="date" name="ngayTap" value="@ngayHomNay" min="@ngayHomNay" required class="field text-sm" />
+                                </div>
+                                <div>
+                                    <label class="block mb-2 text-xs font-semibold text-slate-400">Khung giờ</label>
+                                    <select name="khungGio" required class="field text-sm">
+                                        @if (ViewBag.KhungGioList != null)
+                                        {
+                                            foreach (var gio in ViewBag.KhungGioList)
+                                            {
+                                                <option value="@gio">@gio</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block mb-2 text-xs font-semibold text-slate-400">Ghi chú / mục tiêu buổi tập</label>
+                                <input type="text" name="ghiChu" maxlength="500" placeholder="Ví dụ: Tập vai và chân, ưu tiên kỹ thuật squat..." class="field text-sm" />
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
+                                <p class="text-[11px] text-slate-500"><i class="fa-solid fa-circle-info mr-1"></i>Lịch mới sẽ ở trạng thái chờ HLV xác nhận.</p>
+                                <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 px-5 py-3 text-sm font-bold text-white transition"><i class="fa-solid fa-paper-plane"></i>Xác nhận đặt lịch</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </div>
+
+            <aside class="space-y-6">
+
+                <section class="card overflow-hidden">
+                    <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center"><i class="fa-solid fa-id-card"></i></div><div><h2 class="font-bold text-white text-sm">Gói tập hiện tại</h2><p class="text-[10px] text-slate-500">Trạng thái tài khoản</p></div></div>
+                        <a href="@Url.Action("GoiTapCuaToi", "User")" class="text-[11px] font-semibold text-orange-400 hover:text-orange-300">Chi tiết</a>
+                    </div>
+
+                    <div class="p-5">
+                        @if (goiTapDangHoatDong?.GoiTap != null)
+                        {
+                            <div class="rounded-2xl bg-gradient-to-br from-orange-500/10 to-slate-900 border border-orange-500/20 p-4">
+                                <div class="flex items-start justify-between gap-3"><div><p class="text-[10px] uppercase tracking-wider text-orange-400 font-bold">Đang hoạt động</p><h3 class="mt-1 text-lg font-black text-white">@goiTapDangHoatDong.GoiTap.TenGoi</h3></div><div class="w-9 h-9 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center"><i class="fa-solid fa-fire"></i></div></div>
+                                <div class="grid grid-cols-2 gap-3 mt-4">
+                                    <div class="rounded-xl bg-slate-950/60 p-3"><p class="text-[10px] text-slate-500">Ngày đăng ký</p><p class="mt-1 text-xs font-bold text-white">@goiTapDangHoatDong.NgayDangKy.ToString("dd/MM/yyyy")</p></div>
+                                    <div class="rounded-xl bg-slate-950/60 p-3"><p class="text-[10px] text-slate-500">Ngày hết hạn</p><p class="mt-1 text-xs font-bold text-white">@goiTapDangHoatDong.NgayHetHan.ToString("dd/MM/yyyy")</p></div>
+                                </div>
+                                <div class="mt-3 flex items-center justify-between"><span class="text-xs text-slate-400">Thời gian còn lại</span><span class="text-sm font-black text-emerald-400">@soNgayConLai ngày</span></div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-5"><div class="mx-auto w-12 h-12 rounded-2xl bg-red-500/10 text-red-400 flex items-center justify-center"><i class="fa-solid fa-box-open"></i></div><h3 class="mt-3 font-bold text-white">Chưa có gói tập</h3><p class="mt-1 text-xs text-slate-500">Tài khoản hiện chưa có gói tập đang hoạt động.</p></div>
+                        }
+                    </div>
+                </section>
+
+                <section class="card overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-800 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+            <i class="fa-solid fa-chart-line"></i>
+        </div>
+
+        <div>
+            <h2 class="font-bold text-white text-sm">
+                Tiến độ InBody
+            </h2>
+
+            <p class="text-[10px] text-slate-500">
+                FR8 • AI phân tích dữ liệu sức khỏe
+            </p>
+        </div>
+    </div>
+
+    <div class="p-5 space-y-4">
+
+        <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-brain text-emerald-400"></i>
+
+                <p class="text-xs font-bold text-emerald-400">
+                    AI tóm tắt tiến độ
+                </p>
+            </div>
+
+            <p class="mt-2 text-[11px] text-slate-500 leading-5">
+                AI sử dụng các chỉ số sức khỏe đã được lưu
+                của chính tài khoản hội viên để phân tích xu hướng.
+            </p>
+        </div>
+
+        <button type="button"
+                id="btnAIProgress"
+                onclick="generateAIProgress()"
+                class="w-full rounded-xl
+                       bg-gradient-to-r
+                       from-emerald-500
+                       to-teal-600
+                       hover:from-emerald-600
+                       hover:to-teal-700
+                       py-3
+                       text-sm
+                       font-bold
+                       text-white
+                       transition">
+
+            <i class="fa-solid fa-brain mr-2"></i>
+
+            Phân tích tiến độ
+        </button>
+
+        <div id="aiProgressLoading"
+             class="hidden rounded-xl
+                    border border-emerald-500/20
+                    bg-emerald-500/5
+                    px-4 py-3
+                    text-xs text-emerald-300">
+
+            <i class="fa-solid fa-spinner fa-spin mr-2"></i>
+
+            AI đang phân tích dữ liệu...
+        </div>
+
+        <div id="aiProgressResult"
+             class="hidden rounded-xl
+                    border border-slate-800
+                    bg-slate-950/70
+                    p-4">
+
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-robot text-emerald-400"></i>
+
+                <span class="text-xs font-bold text-emerald-400">
+                    Kết quả AI
+                </span>
+            </div>
+
+            <div id="aiProgressText"
+                 class="mt-3
+                        whitespace-pre-line
+                        text-xs
+                        text-slate-300
+                        leading-6">
+            </div>
+
+        </div>
+
+        <div class="rounded-xl
+                    border border-amber-500/20
+                    bg-amber-500/5
+                    p-3">
+
+            <p class="text-[10px]
+                      text-amber-300
+                      leading-5">
+
+                <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+
+                <strong>Lưu ý:</strong>
+                AI chỉ phân tích dữ liệu tham khảo và
+                không thay thế HLV, bác sĩ hoặc chuyên gia y tế.
+            </p>
+
+        </div>
+
+    </div>
+</section>
+
+                <section class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+                    <div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center"><i class="fa-solid fa-shield-halved"></i></div><div><p class="text-sm font-bold text-white">Hệ thống hoạt động</p><p class="text-[11px] text-slate-500">SmartGym Member Portal</p></div></div>
+                    <div class="mt-4 flex items-center gap-2 text-xs text-emerald-400"><span class="status-dot"></span>Đã kết nối hệ thống</div>
+                </section>
+            </aside>
+        </div>
+
+        <footer class="pt-2 pb-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-slate-600">
+            <span>© @DateTime.Now.Year SmartGym • Member Portal</span>
+            <span>Quản lý tập luyện thông minh</span>
+        </footer>
+    </div>
+</main>
+</div>
+
+<script>
+
+    const aiDashboardConversationHistory = [];
+
+    // =========================================================
+    // MOBILE MENU
+    // =========================================================
+    function toggleMobileMenu() {
+        document
+            .getElementById('mobileMenu')
+            .classList.toggle('hidden');
+    }
+
+
+    // =========================================================
+    // CSRF TOKEN
+    // =========================================================
+    function getCsrfToken() {
+
+        const token =
+            document.querySelector(
+                'input[name="__RequestVerificationToken"]'
+            );
+
+        return token
+            ? token.value
+            : '';
+    }
+
+
+    // Đọc response AI an toàn: ASP.NET có thể trả HTML/text khi lỗi CSRF/500.
+    async function readAIJsonResponse(response, fallbackMessage) {
+        const raw = await response.text();
+        let data;
+
+        try {
+            data = JSON.parse(raw);
+        }
+        catch {
+            const safeText =
+                raw && !raw.trim().startsWith('<')
+                    ? raw.trim().slice(0, 400)
+                    : '';
+
+            throw new Error(
+                safeText || `${fallbackMessage} (HTTP ${response.status})`
+            );
+        }
+
+        if (!response.ok || !data?.success) {
+            throw new Error(
+                data?.message || `${fallbackMessage} (HTTP ${response.status})`
+            );
+        }
+
+        return data;
+    }
+
+
+    // =========================================================
+    // HIỂN THỊ LỖI
+    // =========================================================
+            function showAIError(message) {
+
+            const output =
+                document.getElementById('aiOutput');
+
+            const list =
+                document.getElementById('aiScheduleList');
+
+
+            output.classList.remove(
+                'hidden'
+            );
+
+
+            list.innerHTML = '';
+
+
+            const box =
+                document.createElement('div');
+
+            box.className =
+                'rounded-xl border border-red-500/20 ' +
+                'bg-red-500/5 p-4 text-sm text-red-300';
+
+
+            box.textContent =
+                message;
+
+
+            list.appendChild(
+                box
+            );
+        }
+
+
+    // =========================================================
+    // FR8 - AI PHÂN TÍCH INBODY
+    // =========================================================
+    async function generateAIProgress() {
+
+        const button =
+            document.getElementById(
+                'btnAIProgress'
+            );
+
+        const loading =
+            document.getElementById(
+                'aiProgressLoading'
+            );
+
+        const result =
+            document.getElementById(
+                'aiProgressResult'
+            );
+
+        const text =
+            document.getElementById(
+                'aiProgressText'
+            );
+
+        button.disabled = true;
+
+        loading.classList.remove(
+            'hidden'
+        );
+
+        result.classList.add(
+            'hidden'
+        );
+
+        try {
+
+            const response =
+                await fetch(
+                    '@Url.Action("AiTomTatInBody", "User")',
+                    {
+                        method: 'POST',
+
+                        headers: {
+                            'RequestVerificationToken':
+                                getCsrfToken()
+                        }
+                    }
+                );
+
+            const data =
+                await readAIJsonResponse(
+                    response,
+                    'Không thể phân tích tiến độ.'
+                );
+
+            text.textContent =
+                data.data;
+
+            result.classList.remove(
+                'hidden'
+            );
+
+        }
+        catch (error) {
+
+            showAIError(
+                error.message
+            );
+
+        }
+        finally {
+
+            button.disabled = false;
+
+            loading.classList.add(
+                'hidden'
+            );
+        }
+    }
+
+
+    // =========================================================
+    // FR9 - AI SINH LỊCH 7 NGÀY
+    // =========================================================
+                    async function generateAISchedule() {
+
+            const button =
+                document.getElementById('btnAISchedule');
+
+            const loading =
+                document.getElementById('aiLoading');
+
+            const output =
+                document.getElementById('aiOutput');
+
+            const list =
+                document.getElementById('aiScheduleList');
+
+            const goal =
+                document.getElementById('aiGoal')?.value?.trim() || '';
+
+            const availability =
+                document.getElementById('aiTime')?.value?.trim() || '';
+
+            const level =
+                document.getElementById('aiLevel')?.value?.trim() || '';
+
+
+            // ---------------------------------------------------------
+            // Validate
+            // ---------------------------------------------------------
+
+            if (!goal) {
+
+                showAIError(
+                    'Vui lòng chọn mục tiêu tập luyện.'
+                );
+
+                return;
+            }
+
+
+            if (!availability) {
+
+                showAIError(
+                    'Vui lòng nhập thời gian rảnh.'
+                );
+
+                return;
+            }
+
+
+            if (!level) {
+
+                showAIError(
+                    'Vui lòng chọn trình độ.'
+                );
+
+                return;
+            }
+
+
+            // ---------------------------------------------------------
+            // UI loading
+            // ---------------------------------------------------------
+
+            button.disabled = true;
+
+            button.classList.add(
+                'opacity-60',
+                'cursor-not-allowed'
+            );
+
+            loading.classList.remove(
+                'hidden'
+            );
+
+            output.classList.add(
+                'hidden'
+            );
+
+            list.innerHTML = '';
+
+
+            try {
+
+                const token =
+                    document.querySelector(
+                        'input[name="__RequestVerificationToken"]'
+                    )?.value || '';
+
+
+                const response =
+                    await fetch(
+                        '@Url.Action("AiSinhLich", "User")',
+                        {
+                            method: 'POST',
+
+                            headers: {
+                                'Content-Type':
+                                    'application/json',
+
+                                'RequestVerificationToken':
+                                    token
+                            },
+
+                            body: JSON.stringify({
+
+                                goal:
+                                    goal,
+
+                                availability:
+                                    availability,
+
+                                level:
+                                    level
+
+                            })
+                        }
+                    );
+
+
+                // -----------------------------------------------------
+                // Đọc text trước rồi mới JSON.parse
+                // -----------------------------------------------------
+
+                const raw =
+                    await response.text();
+
+
+                let data;
+
+
+                try {
+
+                    data =
+                        JSON.parse(raw);
+
+                }
+                catch {
+
+                    throw new Error(
+                        raw ||
+                        `Server trả dữ liệu không hợp lệ. HTTP ${response.status}`
+                    );
+
+                }
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.message ||
+                        'Không thể tạo lịch AI.'
+                    );
+
+                }
+
+
+                if (!data.success) {
+
+                    throw new Error(
+                        data.message ||
+                        'AI không thể tạo lịch.'
+                    );
+
+                }
+
+
+                const result =
+                    data.data || '';
+
+
+                if (!result.trim()) {
+
+                    throw new Error(
+                        'AI không trả về nội dung.'
+                    );
+
+                }
+
+
+                // -----------------------------------------------------
+                // Hiển thị kết quả AI
+                // -----------------------------------------------------
+
+                list.textContent =
+                    result;
+
+
+                output.classList.remove(
+                    'hidden'
+                );
+
+
+                // Cuộn nhẹ tới kết quả
+                output.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest'
+                });
+
+
+            }
+            catch (error) {
+
+                showAIError(
+                    error.message ||
+                    'Không thể kết nối tới SmartGym AI.'
+                );
+
+            }
+            finally {
+
+                button.disabled = false;
+
+                button.classList.remove(
+                    'opacity-60',
+                    'cursor-not-allowed'
+                );
+
+                loading.classList.add(
+                    'hidden'
+                );
+
+            }
+        }
+
+
+    // =========================================================
+    // FR10 - AI ASSISTANT
+    // =========================================================
+    async function sendAIChat() {
+
+        const input =
+            document.getElementById(
+                'aiChatQuestion'
+            );
+
+        const button =
+            document.getElementById(
+                'btnAIChat'
+            );
+
+        const chatBox =
+            document.getElementById(
+                'aiChatBox'
+            );
+
+        const question =
+            input.value.trim();
+
+        if (!question) {
+
+            return;
+        }
+
+        addAIChatMessage(
+            question,
+            true
+        );
+
+        input.value = '';
+
+        button.disabled = true;
+
+        const loadingId =
+            'ai-chat-loading-' +
+            Date.now();
+
+        addAILoadingMessage(
+            loadingId
+        );
+
+        try {
+
+            const response =
+                await fetch(
+                    '@Url.Action("AiChat", "User")',
+                    {
+                        method: 'POST',
+
+                        headers: {
+                            'Content-Type':
+                                'application/json',
+
+                            'RequestVerificationToken':
+                                getCsrfToken()
+                        },
+
+                        body: JSON.stringify({
+                            question: question,
+                            history: aiDashboardConversationHistory.slice(-4)
+                        })
+                    }
+                );
+
+            const data =
+                await readAIJsonResponse(
+                    response,
+                    'AI không thể trả lời.'
+                );
+
+            removeAILoadingMessage(
+                loadingId
+            );
+
+            addAIChatMessage(
+                data.data,
+                false
+            );
+
+            aiDashboardConversationHistory.push({
+                role: 'user',
+                content: question
+            });
+
+            aiDashboardConversationHistory.push({
+                role: 'assistant',
+                content: data.data || ''
+            });
+
+            while (aiDashboardConversationHistory.length > 6) {
+                aiDashboardConversationHistory.shift();
+            }
+
+        }
+        catch (error) {
+
+            removeAILoadingMessage(
+                loadingId
+            );
+
+            addAIChatMessage(
+                error.message,
+                false
+            );
+        }
+        finally {
+
+            button.disabled = false;
+
+            input.focus();
+        }
+    }
+
+
+    // =========================================================
+    // THÊM MESSAGE CHAT
+    // =========================================================
+    function addAIChatMessage(
+        message,
+        isUser
+    ) {
+
+        const chatBox =
+            document.getElementById(
+                'aiChatBox'
+            );
+
+        const wrapper =
+            document.createElement(
+                'div'
+            );
+
+        wrapper.className =
+            isUser
+                ? 'flex justify-end'
+                : 'flex justify-start';
+
+        const bubble =
+            document.createElement(
+                'div'
+            );
+
+        bubble.className =
+            isUser
+                ? 'max-w-[90%] rounded-xl bg-orange-500/10 border border-orange-500/20 p-3'
+                : 'max-w-[90%] rounded-xl bg-violet-500/10 border border-violet-500/20 p-3';
+
+        const text =
+            document.createElement(
+                'p'
+            );
+
+        text.className =
+            isUser
+                ? 'text-xs text-orange-300 whitespace-pre-line leading-5'
+                : 'text-xs text-violet-300 whitespace-pre-line leading-5';
+
+        text.textContent =
+            message;
+
+        bubble.appendChild(
+            text
+        );
+
+        wrapper.appendChild(
+            bubble
+        );
+
+        chatBox.appendChild(
+            wrapper
+        );
+
+        chatBox.scrollTop =
+            chatBox.scrollHeight;
+    }
+
+
+    // =========================================================
+    // LOADING CHAT
+    // =========================================================
+    function addAILoadingMessage(id) {
+
+        const chatBox =
+            document.getElementById(
+                'aiChatBox'
+            );
+
+        const wrapper =
+            document.createElement(
+                'div'
+            );
+
+        wrapper.id = id;
+
+        wrapper.className =
+            'flex justify-start';
+
+        wrapper.innerHTML = `
+            <div class="rounded-xl
+                        bg-slate-800
+                        border border-slate-700
+                        p-3
+                        text-xs
+                        text-slate-400">
+
+                <i class="fa-solid
+                          fa-spinner
+                          fa-spin
+                          mr-2"></i>
+
+                AI đang suy nghĩ...
+
+            </div>
+        `;
+
+        chatBox.appendChild(
+            wrapper
+        );
+
+        chatBox.scrollTop =
+            chatBox.scrollHeight;
+    }
+
+
+    function removeAILoadingMessage(id) {
+
+        const element =
+            document.getElementById(
+                id
+            );
+
+        if (element) {
+
+            element.remove();
+        }
+    }
+
+
+    // =========================================================
+    // ENTER ĐỂ GỬI CHAT
+    // =========================================================
+    document
+        .getElementById('aiChatQuestion')
+        ?.addEventListener(
+            'keydown',
+            function(event) {
+
+                if (event.key === 'Enter') {
+
+                    event.preventDefault();
+
+                    sendAIChat();
+                }
+            }
+        );
+        // =========================================================
+// CÂU HỎI NHANH
+// =========================================================
+function askQuickAI(question) {
+
+    const input =
+        document.getElementById(
+            'aiChatQuestion'
+        );
+
+    input.value = question;
+
+    sendAIChat();
+}
+</script>
+<style>
+/* =========================================================
+   AI COACH - HIỂN THỊ TOÀN BỘ NỘI DUNG
+   Không cắt nội dung Gemini khi câu trả lời dài
+   ========================================================= */
+
+#aiOutput {
+    width: 100%;
+    min-width: 0;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+#aiOutput .ai-plan-content {
+    width: 100%;
+    height: auto !important;
+    min-height: 0;
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+}
+
+#aiOutput p {
+    margin-bottom: 1rem;
+    line-height: 1.9;
+}
+
+#aiOutput h1,
+#aiOutput h2,
+#aiOutput h3,
+#aiOutput h4 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+}
+
+#aiOutput ul,
+#aiOutput ol {
+    margin-top: 0.75rem;
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+}
+
+#aiOutput li {
+    margin-bottom: 0.5rem;
+    line-height: 1.8;
+}
+
+/* Các bảng nếu AI sinh ra */
+#aiOutput table {
+    width: 100%;
+    max-width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    display: block;
+    overflow-x: auto;
+}
+
+#aiOutput th,
+#aiOutput td {
+    padding: 0.75rem;
+    text-align: left;
+    vertical-align: top;
+}
+
+/* Không cho card cha cắt mất nội dung */
+.ai-coach-card {
+    height: auto !important;
+    min-height: 0;
+    max-height: none !important;
+    overflow: visible !important;
+}
+</style>
+</body>
+</html>
