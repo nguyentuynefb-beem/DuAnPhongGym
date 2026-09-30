@@ -1,11 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using DuAnCuaToi.Data;
 using DuAnCuaToi.Models;
 using DuAnCuaToi.Services;
+using DuAnCuaToi.Filters;
 
 namespace DuAnCuaToi.Controllers
 {
+    [SessionRole("PT")]
     public class PTController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -582,6 +584,18 @@ namespace DuAnCuaToi.Controllers
                 return RedirectToAction(
                     "Index",
                     "Home");
+            }
+
+            model.HoTen = model.HoTen.Trim();
+            model.TenDangNhap = model.TenDangNhap.Trim();
+
+            var usernameExists = await _context.NguoiDungs
+                .AnyAsync(x => x.Id != user.Id && x.TenDangNhap == model.TenDangNhap);
+
+            if (usernameExists)
+            {
+                ModelState.AddModelError(nameof(model.TenDangNhap), "Tên đăng nhập đã được sử dụng.");
+                return View(model);
             }
 
             user.HoTen =

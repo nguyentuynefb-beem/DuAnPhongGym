@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace DuAnCuaToi.Models
 {
@@ -6,14 +6,16 @@ namespace DuAnCuaToi.Models
     {
         public int Id { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Họ tên không được để trống.")]
         public string HoTen { get; set; } = "";
 
-        [Required]
+        [Required(ErrorMessage = "Tên đăng nhập không được để trống.")]
         public string TenDangNhap { get; set; } = "";
 
+        [MinLength(6, ErrorMessage = "Mật khẩu mới phải có ít nhất 6 ký tự.")]
         public string? MatKhauMoi { get; set; }
 
+        [Compare(nameof(MatKhauMoi), ErrorMessage = "Xác nhận mật khẩu không khớp.")]
         public string? XacNhanMatKhau { get; set; }
     }
 }

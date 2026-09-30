@@ -37,33 +37,44 @@ builder.Services.AddSession(options =>
 
 var app = builder.Build();
 
-// 3. Tự động Migration & Seed Tài khoản AdminGym thật vào SQL Server
+// 3. Tự động Migration & bảo đảm tài khoản quản trị mặc định hợp lệ
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.Migrate(); // Tự tạo CSDL nếu chưa có
-                                  // Thêm đoạn này trong khối seed Data của Program.cs
-    if (!dbContext.NguoiDungs.Any(u => u.VaiTro == "PT"))
+    dbContext.Database.Migrate();
+
+    const string adminUsername = "AdminGym";
+    const string adminPassword = "tuyen123456";
+
+    // Không tạo dữ liệu người dùng mẫu ngoài yêu cầu. Nếu AdminGym đã tồn tại
+    // thì chuẩn hóa lại role + mật khẩu để tránh dữ liệu cũ/plain-text làm lỗi đăng nhập.
+    var admin = dbContext.NguoiDungs
+        .FirstOrDefault(u => u.TenDangNhap == adminUsername);
+
+    if (admin == null)
     {
-        dbContext.NguoiDungs.AddRange(
-            new NguoiDung { TenDangNhap = "pt_nguyenvanc", MatKhauHash = BCrypt.Net.BCrypt.HashPassword("123456"), HoTen = "Nguyễn Văn C (Gym & Fitness)", VaiTro = "PT" },
-            new NguoiDung { TenDangNhap = "pt_lethid", MatKhauHash = BCrypt.Net.BCrypt.HashPassword("123456"), HoTen = "Lê Thị D (Yoga & Cardio)", VaiTro = "PT" },
-            new NguoiDung { TenDangNhap = "pt_tranvane", MatKhauHash = BCrypt.Net.BCrypt.HashPassword("123456"), HoTen = "Trần Văn E (Boxing & Kickfit)", VaiTro = "PT" }
-        );
-        dbContext.SaveChanges();
+        admin = new NguoiDung
+        {
+            TenDangNhap = adminUsername,
+            MatKhauHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
+            HoTen = "Quản Trị Viên Hệ Thống",
+            VaiTro = "Admin",
+            IsOnline = false
+        };
+
+        dbContext.NguoiDungs.Add(admin);
+    }
+    else
+    {
+        admin.HoTen = string.IsNullOrWhiteSpace(admin.HoTen)
+            ? "Quản Trị Viên Hệ Thống"
+            : admin.HoTen;
+        admin.VaiTro = "Admin";
+        admin.MatKhauHash = BCrypt.Net.BCrypt.HashPassword(adminPassword);
+        admin.IsOnline = false;
     }
 
-    if (!dbContext.NguoiDungs.Any(u => u.TenDangNhap == "AdminGym"))
-    {
-        dbContext.NguoiDungs.Add(new NguoiDung
-        {
-            TenDangNhap = "AdminGym",
-            MatKhauHash = BCrypt.Net.BCrypt.HashPassword("123456"), // Mã hóa mật khẩu thật
-            HoTen = "Quản Trị Viên Hệ Thống",
-            VaiTro = "Admin"
-        });
-        dbContext.SaveChanges();
-    }
+    dbContext.SaveChanges();
 }
 
 if (!app.Environment.IsDevelopment())

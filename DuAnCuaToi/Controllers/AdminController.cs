@@ -1,11 +1,13 @@
-﻿using DuAnCuaToi.Data;
+using DuAnCuaToi.Data;
 using DuAnCuaToi.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
+using DuAnCuaToi.Filters;
 
 namespace DuAnCuaToi.Controllers
 {
+    [SessionRole("Admin", "AdminGym")]
     public class AdminController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -142,16 +144,33 @@ namespace DuAnCuaToi.Controllers
         public IActionResult UpdateRole(int userId, string newRole)
         {
             var user = _context.NguoiDungs.FirstOrDefault(u => u.Id == userId);
-            if (user != null)
-            {
-                user.VaiTro = newRole;
-                _context.SaveChanges();
-                TempData["Success"] = $"Đã cập nhật vai trò cho [{user.HoTen}] thành [{newRole}]!";
-            }
-            else
+            if (user == null)
             {
                 TempData["Error"] = "Không tìm thấy tài khoản!";
+                return RedirectToAction("Index");
             }
+
+            newRole = (newRole ?? string.Empty).Trim();
+            if (newRole == "AdminGym")
+                newRole = "Admin";
+
+            var allowedRoles = new[] { "Admin", "PT", "LeTan", "HoiVien" };
+            if (!allowedRoles.Contains(newRole))
+            {
+                TempData["Error"] = "Vai trò không hợp lệ!";
+                return RedirectToAction("Index");
+            }
+
+            // Tài khoản quản trị mặc định phải luôn giữ quyền Admin.
+            if (user.TenDangNhap == "AdminGym" && newRole != "Admin")
+            {
+                TempData["Error"] = "Không thể hạ quyền tài khoản AdminGym mặc định.";
+                return RedirectToAction("Index");
+            }
+
+            user.VaiTro = newRole;
+            _context.SaveChanges();
+            TempData["Success"] = $"Đã cập nhật vai trò cho [{user.HoTen}] thành [{newRole}]!";
             return RedirectToAction("Index");
         }
         [HttpPost]
@@ -163,6 +182,12 @@ namespace DuAnCuaToi.Controllers
             if (user == null)
             {
                 TempData["Error"] = "Không tìm thấy người dùng!";
+                return RedirectToAction("Index");
+            }
+
+            if (user.TenDangNhap == "AdminGym")
+            {
+                TempData["Error"] = "Không thể xóa tài khoản AdminGym mặc định!";
                 return RedirectToAction("Index");
             }
 
@@ -182,6 +207,18 @@ namespace DuAnCuaToi.Controllers
     string goal,
     string timeAvailable)
         {
+            username = (username ?? string.Empty).Trim();
+            fullName = (fullName ?? string.Empty).Trim();
+            password ??= string.Empty;
+
+            if (string.IsNullOrWhiteSpace(username) ||
+                string.IsNullOrWhiteSpace(fullName) ||
+                password.Length < 6)
+            {
+                TempData["Error"] = "Tên đăng nhập, họ tên là bắt buộc và mật khẩu phải có ít nhất 6 ký tự!";
+                return RedirectToAction("Index");
+            }
+
             // Kiểm tra tên đăng nhập đã tồn tại chưa
             if (_context.NguoiDungs.Any(u => u.TenDangNhap == username))
             {
@@ -192,7 +229,7 @@ namespace DuAnCuaToi.Controllers
             var user = new NguoiDung
             {
                 TenDangNhap = username,
-                MatKhauHash = password,   // Sau này nên mã hóa bằng BCrypt
+                MatKhauHash = BCrypt.Net.BCrypt.HashPassword(password),
                 HoTen = fullName,
                 VaiTro = "HoiVien",
                 MucTieuTapLuyen = goal,
@@ -200,6 +237,10 @@ namespace DuAnCuaToi.Controllers
             };
 
             _context.NguoiDungs.Add(user);
+            _context.SaveChanges();
+
+            // Sinh mã hội viên sau khi SQL Server cấp Id.
+            user.MaHoiVien = $"HV{user.Id:0000}";
             _context.SaveChanges();
 
             TempData["Success"] = $"Đã tạo hội viên [{fullName}] thành công!";
