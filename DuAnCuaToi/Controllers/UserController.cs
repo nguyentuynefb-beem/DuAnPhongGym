@@ -1752,7 +1752,7 @@ namespace DuAnCuaToi.Controllers
             }
 
             var user = _context.NguoiDungs
-                .Find(userId);
+                .FirstOrDefault(x => x.Id == userId && x.VaiTro == "HoiVien");
 
             if (user == null)
             {
@@ -1774,15 +1774,30 @@ namespace DuAnCuaToi.Controllers
         // THÔNG TIN CÁ NHÂN - POST
         // =========================================================
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult EditProfile(EditProfileViewModel model)
         {
             if (!ModelState.IsValid)
                 return View(model);
 
-            var user = _context.NguoiDungs.Find(model.Id);
+            var sessionId = GetCurrentMemberId();
+            if (sessionId == null || sessionId.Value != model.Id)
+                return Forbid();
+
+            var user = _context.NguoiDungs
+                .FirstOrDefault(x => x.Id == model.Id && x.VaiTro == "HoiVien");
 
             if (user == null)
-                return RedirectToAction("Index");
+                return RedirectToAction("Index", "Home");
+
+            model.HoTen = model.HoTen.Trim();
+            model.TenDangNhap = model.TenDangNhap.Trim();
+
+            if (_context.NguoiDungs.Any(x => x.Id != user.Id && x.TenDangNhap == model.TenDangNhap))
+            {
+                ModelState.AddModelError(nameof(model.TenDangNhap), "Tên đăng nhập đã được sử dụng.");
+                return View(model);
+            }
 
             user.HoTen = model.HoTen;
             user.TenDangNhap = model.TenDangNhap;

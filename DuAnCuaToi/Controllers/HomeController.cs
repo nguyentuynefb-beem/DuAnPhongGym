@@ -34,13 +34,28 @@ namespace DuAnCuaToi.Controllers
                 return View("Index", model);
             }
 
-            // Tìm tài khoản theo tên đăng nhập
-            var user = _context.NguoiDungs
-                .FirstOrDefault(u => u.TenDangNhap == model.Username);
+            var username = model.Username.Trim();
 
-            // Kiểm tra tài khoản + mật khẩu
-            if (user == null ||
-                !BCrypt.Net.BCrypt.Verify(model.Password, user.MatKhauHash))
+            // Tìm tài khoản theo tên đăng nhập.
+            var user = _context.NguoiDungs
+                .FirstOrDefault(u => u.TenDangNhap == username);
+
+            // BCrypt.Verify sẽ ném lỗi nếu dữ liệu legacy từng lưu mật khẩu thô
+            // trong cột MatKhauHash. Coi hash sai định dạng là đăng nhập thất bại.
+            var passwordValid = false;
+            if (user != null && !string.IsNullOrWhiteSpace(user.MatKhauHash))
+            {
+                try
+                {
+                    passwordValid = BCrypt.Net.BCrypt.Verify(model.Password, user.MatKhauHash);
+                }
+                catch
+                {
+                    passwordValid = false;
+                }
+            }
+
+            if (user == null || !passwordValid)
             {
                 ModelState.AddModelError(
                     "",
@@ -110,11 +125,17 @@ namespace DuAnCuaToi.Controllers
                     );
 
                 case "HoiVien":
-                default:
                     return RedirectToAction(
                         "Index",
                         "User"
                     );
+
+                default:
+                    user.IsOnline = false;
+                    _context.SaveChanges();
+                    HttpContext.Session.Clear();
+                    ModelState.AddModelError("", "Tài khoản có vai trò không hợp lệ. Vui lòng liên hệ quản trị viên.");
+                    return View("Index", model);
             }
         }
 

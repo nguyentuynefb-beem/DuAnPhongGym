@@ -1,11 +1,13 @@
-﻿using QRCoder;
+using QRCoder;
 using DuAnCuaToi.Data;
 using DuAnCuaToi.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using DuAnCuaToi.Filters;
 
 namespace DuAnCuaToi.Controllers
 {
+    [SessionRole("LeTan")]
     public class LeTanController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -427,8 +429,8 @@ TIEN:{hoaDon.TongTien:N0}";
 
             var user = _context.NguoiDungs.Find(id);
 
-            if (user == null)
-                return RedirectToAction("Index");
+            if (user == null || user.VaiTro != "LeTan")
+                return RedirectToAction("Index", "Home");
 
             var model = new EditProfileViewModel
             {
@@ -440,15 +442,34 @@ TIEN:{hoaDon.TongTien:N0}";
             return View(model);
         }
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult EditProfile(EditProfileViewModel model)
         {
             if (!ModelState.IsValid)
                 return View(model);
 
-            var user = _context.NguoiDungs.Find(model.Id);
+            var userIdStr = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrWhiteSpace(userIdStr) ||
+                !int.TryParse(userIdStr, out var sessionUserId) ||
+                sessionUserId != model.Id)
+            {
+                return Forbid();
+            }
+
+            var user = _context.NguoiDungs
+                .FirstOrDefault(x => x.Id == model.Id && x.VaiTro == "LeTan");
 
             if (user == null)
-                return RedirectToAction("Index");
+                return RedirectToAction("Index", "Home");
+
+            model.HoTen = model.HoTen.Trim();
+            model.TenDangNhap = model.TenDangNhap.Trim();
+
+            if (_context.NguoiDungs.Any(x => x.Id != user.Id && x.TenDangNhap == model.TenDangNhap))
+            {
+                ModelState.AddModelError(nameof(model.TenDangNhap), "Tên đăng nhập đã được sử dụng.");
+                return View(model);
+            }
 
             user.HoTen = model.HoTen;
             user.TenDangNhap = model.TenDangNhap;
@@ -456,17 +477,6 @@ TIEN:{hoaDon.TongTien:N0}";
             if (!string.IsNullOrWhiteSpace(model.MatKhauMoi))
             {
                 user.MatKhauHash = BCrypt.Net.BCrypt.HashPassword(model.MatKhauMoi);
-            }
-            if (user.VaiTro == "PT")
-            {
-                var lichs = _context.LichTaps
-                    .Where(x => x.MaPT == user.Id)
-                    .ToList();
-
-                foreach (var item in lichs)
-                {
-                    item.PTUsername = user.TenDangNhap;
-                }
             }
 
             _context.SaveChanges();

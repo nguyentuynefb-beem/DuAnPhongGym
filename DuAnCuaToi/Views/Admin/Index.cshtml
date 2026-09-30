@@ -1,4 +1,4 @@
-﻿@model IEnumerable<DuAnCuaToi.Models.NguoiDung>
+@model IEnumerable<DuAnCuaToi.Models.NguoiDung>
 @{
     Layout = null;
     var memberCount = Model != null ? Model.Count() : 0;
@@ -251,7 +251,7 @@
                                                     <option value="HoiVien" selected="@(item.VaiTro == "HoiVien")">Hội Viên</option>
                                                     <option value="PT" selected="@(item.VaiTro == "PT")">HLV (PT)</option>
                                                     <option value="LeTan" selected="@(item.VaiTro == "LeTan")">Lễ Tân</option>
-                                                    <option value="AdminGym" selected="@(item.VaiTro == "AdminGym")">Admin</option>
+                                                    <option value="Admin" selected="@(item.VaiTro == "Admin" || item.VaiTro == "AdminGym")">Admin</option>
                                                 </select>
                                                 <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-2.5 py-1 rounded-lg text-xs transition">
                                                     Lưu
