@@ -18,13 +18,14 @@ namespace DuAnCuaToi.Controllers
         }
 
         // 1. Lấy toàn bộ tài khoản trong bảng NguoiDungs (không dùng .Where)
-        public IActionResult Index(string? search)
+        public async Task<IActionResult> Index(string? search)
         {
-            // Query người dùng
-            var users = _context.NguoiDungs.AsQueryable();
+            // Query người dùng (chỉ lấy tài khoản chưa bị xóa)
+            var users = _context.NguoiDungs.Where(u => !u.IsDeleted).AsQueryable();
 
-            // Query gói tập
+            // Query gói tập (chỉ lấy gói chưa bị xóa)
             var goiTaps = _context.GoiTaps
+                .Where(g => !g.IsDeleted)
                 .Include(g => g.GoiTapDichVus)
                 .ThenInclude(gd => gd.DichVu)
                 .AsQueryable();
@@ -42,22 +43,24 @@ namespace DuAnCuaToi.Controllers
             }
 
             ViewBag.Search = search;
-            ViewBag.GoiTaps = goiTaps.ToList();
-            ViewBag.DichVus = _context.DichVus.ToList();
+            ViewBag.GoiTaps = await goiTaps.ToListAsync();
+            ViewBag.DichVus = await _context.DichVus.ToListAsync();
 
-            return View(users.ToList());
+            return View(await users.ToListAsync());
         }
+
         [HttpPost]
-        public IActionResult CreateGoiTap(
-    string maGoi,
-    string tenGoi,
-    int thoiHanNgay,
-    decimal gia,
-    string[] quyenLoiList, // Nhận mảng danh sách quyền lợi được tích chọn
-    bool isKhuyenMai,
-    int[] selectedDichVus)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateGoiTap(
+            string maGoi,
+            string tenGoi,
+            int thoiHanNgay,
+            decimal gia,
+            string[] quyenLoiList, // Nhận mảng danh sách quyền lợi được tích chọn
+            bool isKhuyenMai,
+            int[] selectedDichVus)
         {
-            if (_context.GoiTaps.Any(g => g.MaGoi == maGoi))
+            if (await _context.GoiTaps.AnyAsync(g => g.MaGoi == maGoi && !g.IsDeleted))
             {
                 TempData["Error"] = "Mã gói tập đã tồn tại!";
                 return RedirectToAction("Index");
@@ -79,7 +82,7 @@ namespace DuAnCuaToi.Controllers
             };
 
             _context.GoiTaps.Add(goiTap);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             if (selectedDichVus != null && selectedDichVus.Length > 0)
             {
@@ -91,27 +94,57 @@ namespace DuAnCuaToi.Controllers
                         DichVuId = dichVuId
                     });
                 }
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
             }
 
             TempData["Success"] = "Thêm gói tập mới thành công!";
             return RedirectToAction("Index");
         }
+
         [HttpPost]
-        public IActionResult EditGoiTap(string maGoi, string tenGoi, int thoiHanNgay, decimal gia, string quyenLoi, List<string> quyenLoiList)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditGoiTap(string maGoi, string tenGoi, int thoiHanNgay, decimal gia, string quyenLoi, List<string> quyenLoiList)
         {
-            var goiTap = _context.GoiTaps.FirstOrDefault(g => g.MaGoi == maGoi);
+            var goiTap = await _context.GoiTaps
+                .Include(g => g.GoiTapDichVus)
+                .FirstOrDefaultAsync(g => g.MaGoi == maGoi);
+
             if (goiTap != null)
             {
                 goiTap.TenGoi = tenGoi;
                 goiTap.ThoiHanNgay = thoiHanNgay;
                 goiTap.Gia = gia;
-                goiTap.QuyenLoi = quyenLoi;
 
-                // Cập nhật lại các dịch vụ đi kèm nếu có bảng trung gian GoiTapDichVu
-                // ... (xóa dịch vụ cũ & thêm lại danh sách quyenLoiList mới)
+                // Đồng bộ quyền lợi chuỗi
+                string chuoiQuyenLoi = (quyenLoiList != null && quyenLoiList.Count > 0)
+                    ? string.Join(", ", quyenLoiList)
+                    : (!string.IsNullOrWhiteSpace(quyenLoi) ? quyenLoi : "Tập tự do");
+                goiTap.QuyenLoi = chuoiQuyenLoi;
 
-                _context.SaveChanges();
+                // Đồng bộ lại các dịch vụ đi kèm trong bảng trung gian GoiTapDichVu
+                _context.GoiTapDichVus.RemoveRange(goiTap.GoiTapDichVus);
+
+                if (quyenLoiList != null && quyenLoiList.Count > 0)
+                {
+                    var allDichVus = await _context.DichVus.ToListAsync();
+                    foreach (var tenDv in quyenLoiList)
+                    {
+                        var dv = allDichVus.FirstOrDefault(d => 
+                            d.TenDichVu.Equals(tenDv, StringComparison.OrdinalIgnoreCase) ||
+                            d.TenDichVu.Contains(tenDv, StringComparison.OrdinalIgnoreCase));
+
+                        if (dv != null)
+                        {
+                            _context.GoiTapDichVus.Add(new GoiTapDichVu
+                            {
+                                GoiTapId = goiTap.Id,
+                                DichVuId = dv.Id
+                            });
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
                 TempData["Success"] = $"Đã cập nhật thông tin gói tập {maGoi} thành công!";
             }
             else
@@ -121,16 +154,18 @@ namespace DuAnCuaToi.Controllers
             return RedirectToAction("Index");
         }
 
-        // 2. XÓA GÓI TẬP
+        // 2. XÓA GÓI TẬP (Soft Delete - Bảo vệ toàn vẹn dữ liệu)
         [HttpPost]
-        public IActionResult DeleteGoiTap(string maGoi)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteGoiTap(string maGoi)
         {
-            var goiTap = _context.GoiTaps.FirstOrDefault(g => g.MaGoi == maGoi);
+            var goiTap = await _context.GoiTaps.FirstOrDefaultAsync(g => g.MaGoi == maGoi);
             if (goiTap != null)
             {
-                _context.GoiTaps.Remove(goiTap);
-                _context.SaveChanges();
-                TempData["Success"] = $"Đã xóa gói tập {maGoi} khỏi hệ thống!";
+                // Đánh dấu xóa mềm, không xóa vật lý để tránh lỗi Foreign Key Restrict
+                goiTap.IsDeleted = true;
+                await _context.SaveChangesAsync();
+                TempData["Success"] = $"Đã xóa gói tập {maGoi} thành công!";
             }
             else
             {
@@ -141,9 +176,10 @@ namespace DuAnCuaToi.Controllers
 
         // 2. Action cập nhật vai trò
         [HttpPost]
-        public IActionResult UpdateRole(int userId, string newRole)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateRole(int userId, string newRole)
         {
-            var user = _context.NguoiDungs.FirstOrDefault(u => u.Id == userId);
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null)
             {
                 TempData["Error"] = "Không tìm thấy tài khoản!";
@@ -169,15 +205,17 @@ namespace DuAnCuaToi.Controllers
             }
 
             user.VaiTro = newRole;
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             TempData["Success"] = $"Đã cập nhật vai trò cho [{user.HoTen}] thành [{newRole}]!";
             return RedirectToAction("Index");
         }
+
         [HttpPost]
-        public IActionResult DeleteUser(int userId)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteUser(int userId)
         {
-            var user = _context.NguoiDungs
-                               .FirstOrDefault(x => x.Id == userId);
+            var user = await _context.NguoiDungs
+                               .FirstOrDefaultAsync(x => x.Id == userId);
 
             if (user == null)
             {
@@ -191,8 +229,10 @@ namespace DuAnCuaToi.Controllers
                 return RedirectToAction("Index");
             }
 
-            _context.NguoiDungs.Remove(user);
-            _context.SaveChanges();
+            // Đánh dấu xóa mềm, không xóa vật lý để tránh lỗi Foreign Key Restrict
+            user.IsDeleted = true;
+            user.IsOnline = false;
+            await _context.SaveChangesAsync();
 
             TempData["Success"] = "Đã xóa người dùng thành công!";
 
@@ -200,12 +240,13 @@ namespace DuAnCuaToi.Controllers
         }
 
         [HttpPost]
-        public IActionResult CreateMember(
-    string username,
-    string password,
-    string fullName,
-    string goal,
-    string timeAvailable)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateMember(
+            string username,
+            string password,
+            string fullName,
+            string goal,
+            string timeAvailable)
         {
             username = (username ?? string.Empty).Trim();
             fullName = (fullName ?? string.Empty).Trim();
@@ -220,7 +261,7 @@ namespace DuAnCuaToi.Controllers
             }
 
             // Kiểm tra tên đăng nhập đã tồn tại chưa
-            if (_context.NguoiDungs.Any(u => u.TenDangNhap == username))
+            if (await _context.NguoiDungs.AnyAsync(u => u.TenDangNhap == username && !u.IsDeleted))
             {
                 TempData["Error"] = "Tên đăng nhập đã tồn tại!";
                 return RedirectToAction("Index");
@@ -237,11 +278,11 @@ namespace DuAnCuaToi.Controllers
             };
 
             _context.NguoiDungs.Add(user);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             // Sinh mã hội viên sau khi SQL Server cấp Id.
             user.MaHoiVien = $"HV{user.Id:0000}";
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             TempData["Success"] = $"Đã tạo hội viên [{fullName}] thành công!";
             return RedirectToAction("Index");

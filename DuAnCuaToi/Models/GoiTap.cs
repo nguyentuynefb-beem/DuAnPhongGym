@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace DuAnCuaToi.Models
 {
@@ -20,6 +20,8 @@ namespace DuAnCuaToi.Models
         public string? QuyenLoi { get; set; }
 
         public bool IsKhuyenMai { get; set; } = false;
+
+        public bool IsDeleted { get; set; } = false;
 
         public int? ChiNhanhId { get; set; }
 

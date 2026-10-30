@@ -1,0 +1,83 @@
+/* Admin-only light/dark theme overrides for the Tailwind CDN dashboard. */
+html[data-admin-theme="dark"] { color-scheme: dark; }
+html[data-admin-theme="light"] { color-scheme: light; background: #eef2f7 !important; }
+
+html[data-admin-theme="light"] body {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(249,115,22,.08), transparent 28%),
+    #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html[data-admin-theme="light"] .bg-slate-950,
+html[data-admin-theme="light"] .bg-slate-950\/50,
+html[data-admin-theme="light"] .bg-slate-950\/80 { background-color: #f8fafc !important; }
+html[data-admin-theme="light"] .bg-slate-900 { background-color: #ffffff !important; }
+html[data-admin-theme="light"] .bg-slate-900\/80 { background-color: rgba(255,255,255,.92) !important; }
+html[data-admin-theme="light"] .bg-slate-800,
+html[data-admin-theme="light"] .bg-slate-800\/50,
+html[data-admin-theme="light"] .bg-slate-800\/60 { background-color: #eef2f7 !important; }
+html[data-admin-theme="light"] .bg-slate-700 { background-color: #e2e8f0 !important; }
+
+html[data-admin-theme="light"] .border-slate-800,
+html[data-admin-theme="light"] .border-slate-800\/80 { border-color: #dbe3ee !important; }
+html[data-admin-theme="light"] .border-slate-700 { border-color: #cbd5e1 !important; }
+
+html[data-admin-theme="light"] .text-white,
+html[data-admin-theme="light"] .text-slate-100,
+html[data-admin-theme="light"] .text-slate-200 { color: #0f172a !important; }
+html[data-admin-theme="light"] .text-slate-300 { color: #334155 !important; }
+html[data-admin-theme="light"] .text-slate-400 { color: #64748b !important; }
+html[data-admin-theme="light"] .text-slate-500 { color: #64748b !important; }
+
+/* Keep text white on strongly colored actions/badges. */
+html[data-admin-theme="light"] .bg-red-600,
+html[data-admin-theme="light"] .bg-rose-600,
+html[data-admin-theme="light"] .bg-orange-500,
+html[data-admin-theme="light"] .bg-emerald-500,
+html[data-admin-theme="light"] .bg-gradient-to-r,
+html[data-admin-theme="light"] .bg-gradient-to-tr {
+  color: #fff !important;
+}
+html[data-admin-theme="light"] .bg-gradient-to-r .text-white,
+html[data-admin-theme="light"] .bg-gradient-to-tr .text-white { color: #fff !important; }
+
+html[data-admin-theme="light"] input,
+html[data-admin-theme="light"] select,
+html[data-admin-theme="light"] textarea {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+html[data-admin-theme="light"] input::placeholder,
+html[data-admin-theme="light"] textarea::placeholder { color: #94a3b8 !important; }
+html[data-admin-theme="light"] select option { background: #fff; color: #0f172a; }
+
+html[data-admin-theme="light"] header {
+  background-color: rgba(255,255,255,.94) !important;
+  border-color: #dbe3ee !important;
+  box-shadow: 0 6px 24px rgba(15,23,42,.06);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+html[data-admin-theme="light"] .shadow-xl,
+html[data-admin-theme="light"] .shadow-2xl { box-shadow: 0 14px 34px rgba(15,23,42,.08) !important; }
+html[data-admin-theme="light"] .bg-black\/75,
+html[data-admin-theme="light"] .bg-black\/70 { background-color: rgba(15,23,42,.52) !important; }
+
+#adminThemeToggle {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+}
+#adminThemeToggle:hover { border-color: rgba(249,115,22,.35); }
+html[data-admin-theme="light"] #adminThemeToggle {
+  background: #fff !important;
+  color: #c2410c !important;
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 14px rgba(15,23,42,.08);
+}

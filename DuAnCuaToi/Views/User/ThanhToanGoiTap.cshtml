@@ -1,4 +1,4 @@
-﻿@model DuAnCuaToi.Models.HoaDon
+@model DuAnCuaToi.Models.HoaDon
 
 @{
     Layout = null;
@@ -428,6 +428,113 @@
                     </div>
 
                 </div>
+
+
+                <!-- ================================================= -->
+                <!-- QR THANH TOÁN DEMO -->
+                <!-- ================================================= -->
+
+                @if (ViewBag.QRCode != null)
+                {
+                    <div class="mt-5
+                                rounded-2xl
+                                border
+                                border-orange-500/20
+                                bg-slate-950
+                                p-5">
+
+                        <div class="flex flex-col
+                                    md:flex-row
+                                    items-center
+                                    gap-5">
+
+                            <div class="bg-white
+                                        rounded-2xl
+                                        p-3
+                                        shrink-0">
+
+                                <img src="data:image/png;base64,@ViewBag.QRCode"
+                                     alt="QR thanh toán demo SmartGym"
+                                     class="w-48
+                                            h-48
+                                            object-contain" />
+
+                            </div>
+
+                            <div class="flex-1
+                                        text-center
+                                        md:text-left">
+
+                                <div class="inline-flex
+                                            items-center
+                                            gap-2
+                                            px-3 py-1.5
+                                            rounded-full
+                                            bg-orange-500/10
+                                            text-orange-400
+                                            text-xs
+                                            font-bold">
+
+                                    <i class="fa-solid fa-qrcode"></i>
+                                    QR DEMO
+
+                                </div>
+
+                                <h3 class="text-lg
+                                           font-black
+                                           mt-3">
+
+                                    Quét mã QR để thanh toán
+
+                                </h3>
+
+                                <p class="text-sm
+                                          text-slate-400
+                                          mt-2
+                                          leading-6">
+
+                                    Đây là mã QR giả dùng để mô phỏng
+                                    chức năng thanh toán của SmartGym.
+
+                                </p>
+
+                                <div class="mt-4
+                                            rounded-xl
+                                            bg-slate-900
+                                            border
+                                            border-slate-800
+                                            px-4 py-3">
+
+                                    <p class="text-xs text-slate-500">
+                                        Số tiền thanh toán
+                                    </p>
+
+                                    <p class="text-xl
+                                              font-black
+                                              text-orange-400
+                                              mt-1">
+
+                                        @Model.TongTien.ToString("N0") VNĐ
+
+                                    </p>
+
+                                </div>
+
+                                <p class="mt-3
+                                          text-xs
+                                          text-yellow-400">
+
+                                    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                                    QR này chỉ dùng để demo, không thực hiện giao dịch ngân hàng thật.
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+                }
 
 
                 <!-- WARNING -->
