@@ -59,12 +59,33 @@ namespace DuAnCuaToi.Services
 
 
         // =========================================================
-        // TIỀN XỬ LÝ BẢO MẬT: Lọc sạch thẻ HTML và ký tự nguy hại
+        // TIỀN XỬ LÝ BẢO MẬT & PII MASKING (ẨN DANH THÔNG TIN NHẠY CẢM)
         // =========================================================
         private static string SanitizeUserInput(string? input)
         {
             if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+
+            // 1. Loại bỏ các thẻ HTML / Script injection nguy hiểm
             var cleaned = System.Text.RegularExpressions.Regex.Replace(input, @"<[^>]*>", string.Empty);
+
+            // 2. Ẩn danh địa chỉ Email
+            cleaned = System.Text.RegularExpressions.Regex.Replace(
+                cleaned,
+                @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
+                "[Email]");
+
+            // 3. Ẩn danh Số điện thoại Việt Nam (các đầu số 03, 05, 07, 08, 09 hoặc +84)
+            cleaned = System.Text.RegularExpressions.Regex.Replace(
+                cleaned,
+                @"(?:\+84|84|0)(?:3|5|7|8|9)\d{8}\b",
+                "[Số điện thoại]");
+
+            // 4. Ẩn danh Số thẻ ngân hàng, Số tài khoản hoặc CCCD/CMND (dãy 9 đến 19 chữ số)
+            cleaned = System.Text.RegularExpressions.Regex.Replace(
+                cleaned,
+                @"\b\d{9,19}\b",
+                "[Thông tin định danh]");
+
             return cleaned.Trim();
         }
 
