@@ -1,0 +1,73 @@
+﻿/* Color Variables & Base Reset */
+:root {
+    --bg-dark: #0f172a;
+    --bg-surface: #1e293b;
+    --bg-surface-light: #334155;
+    --border-slate: #334155;
+    --text-slate-300: #cbd5e1;
+    --text-slate-400: #94a3b8;
+    --brand-warning: #ff9800;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-dark) !important;
+    color: #f8fafc;
+}
+
+/* Custom Backgrounds & Surfaces */
+.bg-surface {
+    background-color: var(--bg-surface) !important;
+}
+
+.bg-surface-light {
+    background-color: var(--bg-surface-light) !important;
+}
+
+.border-slate-800 {
+    border-color: #1e293b !important;
+}
+
+.border-slate-700 {
+    border-color: #334155 !important;
+}
+
+/* Links & Nav Styling */
+.hover-text-white:hover {
+    color: #ffffff !important;
+}
+
+.hover-text-warning:hover {
+    color: var(--brand-warning) !important;
+}
+
+.text-slate-300 {
+    color: var(--text-slate-300) !important;
+}
+
+.text-slate-400 {
+    color: var(--text-slate-400) !important;
+}
+
+.shadow-warning {
+    box-shadow: 0 0 15px rgba(255, 152, 0, 0.25);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--bg-surface-light);
+    border-radius: 4px;
+}
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #475569;
+    }

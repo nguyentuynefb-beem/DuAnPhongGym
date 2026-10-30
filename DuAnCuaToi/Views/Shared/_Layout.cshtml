@@ -1,0 +1,152 @@
+﻿@using Microsoft.AspNetCore.Http
+<!DOCTYPE html>
+<html lang="vi" class="h-100">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Smart Gym AI Center</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- CSS Frameworks & Icons -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/reception.css" />
+    <link rel="stylesheet" href="~/DuAnCuaToi.styles.css" asp-append-version="true" />
+</head>
+<body class="d-flex flex-column h-100 bg-dark text-light font-sans">
+    <header class="sticky-top">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-surface border-bottom border-slate-800 shadow-lg py-2.5">
+            <div class="container">
+                <!-- Brand Logo -->
+                <a class="navbar-brand d-flex align-items-center gap-2 fw-extrabold text-uppercase tracking-wider" asp-area="" asp-controller="Home" asp-action="Index">
+                    <div class="brand-icon bg-warning text-dark rounded-3 px-2 py-1 shadow-warning">
+                        <i class="bi bi-lightning-charge-fill"></i>
+                    </div>
+                    <span><span class="text-white">SMART</span><span class="text-warning">GYM</span> <span class="badge bg-warning-subtle text-warning border border-warning-subtle fs-7">AI</span></span>
+                </a>
+
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarMain">
+                    <!-- Navigation Links -->
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 fs-6">
+                        <li class="nav-item">
+                            <a class="nav-link text-slate-300 hover-text-white px-3" asp-area="" asp-controller="Home" asp-action="Index">
+                                <i class="bi bi-house-door me-1"></i> Trang chủ
+                            </a>
+                        </li>
+
+                                                @{
+                            var userRole = Context.Session.GetString("Role");
+                            var userName = Context.Session.GetString("UserName");
+                        }
+
+                        @if (!string.IsNullOrEmpty(userRole))
+                        {
+                            @if (userRole == "LeTan")
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-info fw-semibold px-3" asp-controller="LeTan" asp-action="Index">
+                                        <i class="bi bi-person-workspace me-1"></i> Bàn Lễ Tân
+                                    </a>
+                                </li>
+                            }
+                            else if (userRole == "PT")
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-warning fw-semibold px-3" asp-controller="PT" asp-action="Index">
+                                        <i class="fa-solid fa-dumbbell me-1"></i> Dashboard HLV
+                                    </a>
+                                </li>
+                            }
+                            else if (userRole == "Admin")
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-danger fw-semibold px-3" asp-controller="Admin" asp-action="Index">
+                                        <i class="bi bi-speedometer2 me-1"></i> Quản Trị Hệ Thống
+                                    </a>
+                                </li>
+                            }
+                        }
+
+                        <li class="nav-item">
+                            <a class="nav-link text-slate-300 hover-text-white px-3" asp-area="" asp-controller="Home" asp-action="Privacy">
+                                <i class="bi bi-shield-check me-1"></i> Bảo mật
+                            </a>
+                        </li>
+                    </ul>
+
+                    <!-- User Account / Session Actions -->
+                    <div class="d-flex align-items-center gap-3">
+                        @if (!string.IsNullOrEmpty(userName))
+                        {
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary text-light dropdown-toggle border-slate-700 bg-surface-light px-3 py-1.5 rounded-3 d-flex align-items-center gap-2" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-person-circle text-warning fs-5"></i>
+                                    <span class="fw-semibold fs-6">@userName</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg border-slate-800" aria-labelledby="userMenu">
+                                    <li><span class="dropdown-item-text text-muted small">Quyền: <strong class="text-warning">@userRole</strong></span></li>
+                                    <li><hr class="dropdown-divider border-slate-800"></li>
+                                                                        <li>
+                                        <a class="dropdown-item text-danger d-flex align-items-center gap-2" asp-controller="Home" asp-action="Logout">
+                                            <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        }
+                        else
+                        {
+                                                        <a asp-controller="Home" asp-action="Index" class="btn btn-warning btn-sm px-4 py-2 fw-bold rounded-3 shadow-warning">
+                                <i class="bi bi-box-arrow-in-right me-1"></i> Đăng Nhập
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main role="main" class="flex-shrink-0 my-4">
+        @RenderBody()
+    </main>
+
+    <!-- Modern Dark Footer -->
+    <footer class="footer mt-auto py-4 bg-surface border-top border-slate-800 text-slate-400">
+        <div class="container">
+            <div class="row gy-3 align-items-center">
+                <div class="col-md-6 text-center text-md-start">
+                    <span class="fw-bold text-light">&copy; 2026 Smart Gym AI Center.</span>
+                    <span class="d-block d-sm-inline-block mt-1 mt-sm-0 text-muted small">Nền tảng quản lý phòng tập & cá nhân hóa lịch tập luyện AI.</span>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy" class="text-slate-400 hover-text-warning text-decoration-none small me-3">
+                        <i class="bi bi-shield-lock me-1"></i> Chính sách bảo mật
+                    </a>
+                    <a href="mailto:support@smartgym.com" class="text-slate-400 hover-text-warning text-decoration-none small">
+                        <i class="bi bi-envelope me-1"></i> Hỗ trợ kỹ thuật
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

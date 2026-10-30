@@ -1,0 +1,134 @@
+@{
+    ViewData["Title"] = "Chính Sách Bảo Mật - Smart Gym Center";
+    Layout = "_Layout";
+}
+
+<style>
+    .privacy-header {
+        background: linear-gradient(135deg, #111 0%, #1a1a2e 100%);
+        border-bottom: 2px solid #ff9800;
+    }
+
+    .text-gradient-primary {
+        background: linear-gradient(45deg, #ff5722, #ff9800);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .card-custom {
+        background: #ffffff;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s ease;
+    }
+
+        .card-custom:hover {
+            transform: translateY(-4px);
+        }
+
+    .icon-badge {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 152, 0, 0.15);
+        color: #ff9800;
+        font-size: 1.3rem;
+    }
+</style>
+
+<!-- HEADER BANNER -->
+<div class="privacy-header py-5 text-white mb-5">
+    <div class="container text-center">
+        <span class="badge bg-warning text-dark mb-2 px-3 py-2 fw-bold text-uppercase">
+            <i class="bi bi-shield-check me-1"></i> Bảo Vệ Dữ Liệu Người Dùng
+        </span>
+        <h1 class="display-5 fw-bold mb-2">CHÍNH SÁCH <span class="text-gradient-primary">BẢO MẬT</span></h1>
+        <p class="lead text-muted mb-0">Cam kết bảo mật thông tin cá nhân và dữ liệu tập luyện tại Smart Gym Center</p>
+    </div>
+</div>
+
+<!-- NỘI DUNG CHÍNH SÁCH -->
+<div class="container mb-5 text-dark">
+    <div class="row g-4">
+        <!-- Card 1: Thu thập thông tin -->
+        <div class="col-md-6">
+            <div class="card card-custom h-100 p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="icon-badge me-3"><i class="bi bi-person-lines-fill"></i></div>
+                    <h5 class="fw-bold mb-0">1. Dữ Liệu Thu Thập</h5>
+                </div>
+                <p class="text-muted small mb-2">Hệ thống thu thập các thông tin cần thiết nhằm vận hành dịch vụ phòng tập và cá nhân hóa trải nghiệm:</p>
+                <ul class="text-muted small ps-3 mb-0">
+                    <li><strong>Thông tin cá nhân:</strong> Họ tên, số điện thoại, tài khoản đăng nhập.</li>
+                    <li><strong>Dữ liệu tập luyện:</strong> Lịch sử điểm danh ra/vào, thông tin gói tập, ghi chú chuyên môn từ HLV.</li>
+                    <li><strong>Chỉ số sức khỏe:</strong> Mục tiêu tập luyện (tăng cơ/giảm mỡ), lịch rảnh để hỗ trợ tính năng AI.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Card 2: Xử lý dữ liệu AI -->
+        <div class="col-md-6">
+            <div class="card card-custom h-100 p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="icon-badge me-3"><i class="bi bi-cpu-fill"></i></div>
+                    <h5 class="fw-bold mb-0">2. An Toàn Dữ Liệu AI</h5>
+                </div>
+                <p class="text-muted small mb-2">Toàn bộ dữ liệu gửi tới Trợ lý AI (gợi ý lịch tập, tóm tắt tiến độ, nhắc gia hạn) tuân thủ các quy chuẩn nghiêm ngặt:</p>
+                <ul class="text-muted small ps-3 mb-0">
+                    <li><strong>Giảm thiểu dữ liệu:</strong> Chỉ gửi dữ liệu cần thiết cho từng câu hỏi/tính năng; thông tin định danh được loại bỏ khi không cần thiết.</li>
+                    <li><strong>Không chia sẻ thương mại:</strong> Dữ liệu tập luyện tuyệt đối không bị thương mại hóa hoặc bán cho bên thứ ba.</li>
+                    <li><strong>Mục đích giới hạn:</strong> Chỉ sử dụng để tự động hóa đề xuất tập luyện và thông báo lịch.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Card 3: An toàn thông tin -->
+        <div class="col-md-6">
+            <div class="card card-custom h-100 p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="icon-badge me-3"><i class="bi bi-lock-fill"></i></div>
+                    <h5 class="fw-bold mb-0">3. Bảo Mật & Lưu Trữ</h5>
+                </div>
+                <p class="text-muted small mb-2">Smart Gym Center áp dụng các giải pháp kỹ thuật để bảo vệ tài khoản và dữ liệu hệ thống:</p>
+                <ul class="text-muted small ps-3 mb-0">
+                    <li>Mật khẩu được mã hóa an toàn trước khi lưu trữ vào cơ sở dữ liệu.</li>
+                    <li>Trang bị cơ chế chống tấn công CSRF, SQL Injection trên các form giao dịch.</li>
+                    <li>Quyền truy cập dữ liệu được phân quyền chặt chẽ theo vai trò (Admin, Lễ tân, HLV, Hội viên).</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Card 4: Quyền hạn hội viên -->
+        <div class="col-md-6">
+            <div class="card card-custom h-100 p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="icon-badge me-3"><i class="bi bi-person-check-fill"></i></div>
+                    <h5 class="fw-bold mb-0">4. Quyền Của Hội Viên</h5>
+                </div>
+                <p class="text-muted small mb-2">Hội viên luôn nắm quyền kiểm soát đối với dữ liệu cá nhân lưu trữ trên hệ thống:</p>
+                <ul class="text-muted small ps-3 mb-0">
+                    <li>Yêu cầu tra cứu hoặc cập nhật lại thông tin cá nhân bị sai lệch.</li>
+                    <li>Theo dõi minh bạch lịch sử gia hạn gói tập và điểm danh.</li>
+                    <li>Thắc mắc hoặc yêu cầu hỗ trợ xóa tài khoản khi ngừng sử dụng dịch vụ tại trung tâm.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- KHUYẾN CÁO VÀ LIÊN HỆ -->
+    <div class="mt-5 p-4 rounded-3 bg-dark text-light d-flex align-items-center justify-content-between flex-wrap gap-3 border border-secondary">
+        <div>
+            <h6 class="fw-bold text-warning mb-1">
+                <i class="bi bi-envelope-check-fill me-2"></i>Bạn có thắc mắc về chính sách bảo mật?
+            </h6>
+            <p class="small text-muted mb-0">Bộ phận hỗ trợ kỹ thuật và quản trị viên luôn sẵn sàng giải đáp.</p>
+        </div>
+        <a href="mailto:support@smartgym.com" class="btn btn-warning btn-sm px-4 fw-bold text-uppercase">
+            Gửi Yêu Cầu Hỗ Trợ
+        </a>
+    </div>
+</div>

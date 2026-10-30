@@ -1,0 +1,298 @@
+﻿@model List<DuAnCuaToi.Models.ThongBao>
+
+@{
+    Layout = null;
+
+    var tenHienThi =
+        Context.Session.GetString("UserName")
+        ?? "Hội viên";
+}
+
+<!DOCTYPE html>
+
+<html lang="vi"
+      class="h-full bg-slate-950 text-slate-100">
+
+<head>
+
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title>Thông báo - Smart Gym</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+</head>
+
+
+<body class="min-h-full bg-slate-950 text-slate-100">
+
+<div class="min-h-screen">
+
+
+    <!-- HEADER -->
+
+    <header class="h-16
+                   bg-slate-900
+                   border-b border-slate-800
+                   flex items-center justify-between
+                   px-4 sm:px-6">
+
+        <div class="flex items-center gap-3">
+
+            <div class="w-9 h-9
+                        bg-orange-500
+                        rounded-lg
+                        flex items-center
+                        justify-center">
+
+                <i class="fa-solid fa-dumbbell"></i>
+
+            </div>
+
+            <span class="font-bold text-white">
+                SMART<span class="text-orange-500">GYM</span>
+            </span>
+
+        </div>
+
+
+        <div class="flex items-center gap-4">
+
+            <span class="text-sm text-slate-300">
+                @tenHienThi
+            </span>
+
+            <a asp-controller="Home"
+               asp-action="Logout"
+               class="text-slate-400
+                      hover:text-red-400">
+
+                <i class="fa-solid fa-right-from-bracket"></i>
+
+            </a>
+
+        </div>
+
+    </header>
+
+
+    <!-- MAIN -->
+
+    <main class="max-w-5xl mx-auto p-6">
+
+
+        <!-- TITLE -->
+
+        <div class="flex items-center justify-between mb-6">
+
+            <div>
+
+                <h1 class="text-2xl font-bold">
+
+                    <i class="fa-solid fa-bell text-orange-500 me-2"></i>
+
+                    Thông báo
+
+                </h1>
+
+                <p class="text-sm text-slate-400 mt-1">
+
+                    Thanh toán, lịch tập và điểm danh của bạn.
+
+                </p>
+
+            </div>
+
+
+            <a asp-controller="User"
+               asp-action="Index"
+               class="px-4 py-2
+                      bg-slate-800
+                      hover:bg-slate-700
+                      rounded-xl
+                      text-sm">
+
+                <i class="fa-solid fa-arrow-left me-1"></i>
+
+                Quay lại
+
+            </a>
+
+        </div>
+
+
+        <!-- ĐÁNH DẤU ĐÃ ĐỌC -->
+
+        @if (Model != null && Model.Any(x => !x.DaDoc))
+        {
+
+            <form asp-controller="User"
+                  asp-action="DanhDauTatCaThongBaoDaDoc"
+                  method="post"
+                  class="mb-5">
+
+                <button type="submit"
+                        class="px-4 py-2
+                               bg-orange-500
+                               hover:bg-orange-600
+                               rounded-xl
+                               text-sm
+                               font-semibold">
+
+                    <i class="fa-solid fa-check-double me-1"></i>
+
+                    Đánh dấu tất cả đã đọc
+
+                </button>
+
+            </form>
+
+        }
+
+
+        <!-- DANH SÁCH -->
+
+        @if (Model != null && Model.Any())
+        {
+
+            <div class="space-y-4">
+
+                @foreach (var item in Model)
+                {
+
+                    <div class="
+                        p-5
+                        rounded-2xl
+                        border
+                        @(item.DaDoc
+                            ? "bg-slate-900 border-slate-800"
+                            : "bg-orange-500/10 border-orange-500/30")
+                    ">
+
+                        <div class="flex gap-4">
+
+                            <div class="
+                                w-11 h-11
+                                rounded-xl
+                                flex items-center
+                                justify-center
+                                shrink-0
+                                @(item.DaDoc
+                                    ? "bg-slate-800 text-slate-400"
+                                    : "bg-orange-500/20 text-orange-400")
+                            ">
+
+                                <i class="fa-solid fa-bell"></i>
+
+                            </div>
+
+
+                            <div class="flex-1">
+
+                                <div class="flex justify-between gap-4">
+
+                                    <div>
+
+                                        <p class="
+                                            text-sm
+                                            @(item.DaDoc
+                                                ? "text-slate-300"
+                                                : "text-white font-bold")
+                                        ">
+
+                                            @item.NoiDung
+
+                                        </p>
+
+
+                                        <p class="text-xs
+                                                  text-slate-500
+                                                  mt-2">
+
+                                            @item.NgayTao
+                                                .ToString("HH:mm - dd/MM/yyyy")
+
+                                        </p>
+
+                                    </div>
+
+
+                                    @if (!item.DaDoc)
+                                    {
+
+                                        <span class="
+                                            px-2 py-1
+                                            bg-orange-500
+                                            text-white
+                                            text-[10px]
+                                            font-bold
+                                            rounded-full
+                                            h-fit">
+
+                                            MỚI
+
+                                        </span>
+
+                                    }
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                }
+
+            </div>
+
+        }
+        else
+        {
+
+            <div class="
+                bg-slate-900
+                border border-slate-800
+                rounded-2xl
+                p-12
+                text-center">
+
+                <i class="
+                    fa-solid fa-bell-slash
+                    text-5xl
+                    text-slate-600">
+                </i>
+
+                <h2 class="text-lg font-bold mt-4">
+
+                    Chưa có thông báo
+
+                </h2>
+
+                <p class="text-sm
+                          text-slate-500
+                          mt-2">
+
+                    Khi có thanh toán, lịch tập hoặc điểm danh,
+                    thông báo sẽ xuất hiện tại đây.
+
+                </p>
+
+            </div>
+
+        }
+
+    </main>
+
+</div>
+
+</body>
+
+</html>

@@ -1,0 +1,372 @@
+﻿@model DuAnCuaToi.Models.PTDashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard Huấn Luyện Viên";
+}
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="max-w-7xl mx-auto my-6 px-2 sm:px-4 space-y-6 font-sans">
+    <a href="@Url.Action("Logout", "Home")"
+       class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        Đăng xuất
+    </a>
+    <i class="fa-solid fa-bell"></i>
+
+    @if (ViewBag.SoThongBao > 0)
+    {
+        <span class="bg-red-600 text-white rounded-full px-2">
+            @ViewBag.SoThongBao
+        </span>
+        @foreach (var tb in ViewBag.ThongBao)
+        {
+            <div>
+                @tb.NoiDung
+            </div>
+        }
+    }
+
+    <!-- HEADER DASHBOARD -->
+    <div class="bg-[#1e232a] border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-6 relative z-10">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-black text-amber-400 tracking-wide uppercase flex items-center gap-3">
+                    <i class="fa-solid fa-dumbbell"></i>
+                    <span>DASHBOARD HUẤN LUYỆN VIÊN (PT)</span>
+                </h1>
+                <p class="text-slate-300 text-sm mt-2">
+                    Xin chào <strong class="text-white font-bold">@Model.TenHLV</strong>, bạn đang đăng nhập với quyền <span class="text-amber-400 font-semibold">HLV (PT)</span>.
+                </p>
+            </div>
+
+            <div class="flex gap-3">
+                <a asp-controller="PT"
+                   asp-action="EditProfile"
+                   class="btn btn-warning">
+
+                    <i class="fas fa-user-edit"></i>
+                    Thông tin cá nhân
+
+                </a>
+                <button onclick="toggleModal('updateResultModal', true)" class="bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Cập Nhật Kết Quả Tập</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KHU VỰC THÔNG BÁO DUYỆT LỊCH ĐẶT MỚI (TỪ VIEWBAG) -->
+    @if (ViewBag.PendingRequests != null && ViewBag.PendingCount > 0)
+    {
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 shadow-lg space-y-3">
+            <div class="flex items-center justify-between border-b border-amber-500/20 pb-2">
+                <h3 class="text-amber-400 font-bold text-xs uppercase tracking-wide flex items-center gap-2">
+                    <i class="fa-solid fa-bell text-amber-400 animate-bounce"></i>
+                    <span>Yêu Cầu Đặt Lịch Mới Cần Xác Nhận (@ViewBag.PendingCount)</span>
+                </h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                @foreach (var req in (IEnumerable<DuAnCuaToi.Models.LichTap>)ViewBag.PendingRequests)
+                {
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-[#161a20] p-4 rounded-xl border border-slate-800 gap-3">
+                        <div class="space-y-1">
+                            <div class="font-bold text-white text-sm">Hội viên: @(req.HoiVien?.HoTen ?? "Hội viên #" + req.HoiVienId)</div>
+                            <div class="text-xs text-slate-300">
+                                <span class="text-amber-400 font-semibold">@req.NgayTap.ToString("dd/MM/yyyy")</span> |
+                                <span class="font-mono">@req.ThoiGianBatDau.ToString(@"hh\:mm") - @req.ThoiGianKetThuc.ToString(@"hh\:mm")</span>
+                            </div>
+                            <div class="text-xs text-slate-400 italic">Nội dung: @req.NoiDung</div>
+                        </div>
+                        <div class="flex gap-2 w-full sm:w-auto justify-end">
+
+                                <form asp-controller="PT"
+                                      asp-action="XacNhanLich"
+                                      method="post">
+
+                                    <input type="hidden"
+                                           name="id"
+                                           value="@req.Id" />
+
+                                    <button type="submit">
+                                        Duyệt
+                                    </button>
+
+                                </form>
+
+                                <form asp-controller="PT"
+                                      asp-action="TuChoiLich"
+                                      method="post">
+
+                                    <input type="hidden"
+                                           name="id"
+                                           value="@req.Id" />
+
+                                    <button type="submit">
+                                        Từ chối
+                                    </button>
+
+                                </form>
+
+                            </div>
+                        </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- THỐNG KÊ TỪ DATABASE -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-[#1e232a] p-5 rounded-2xl border border-slate-800 space-y-2">
+            <div class="flex justify-between text-slate-400 text-xs uppercase font-bold">
+                <span>Ca Làm Việc Hôm Nay</span>
+                <i class="fa-solid fa-briefcase text-amber-400"></i>
+            </div>
+            <div class="text-lg font-bold text-white">@Model.CaLamViec</div>
+            <div class="text-[11px] text-amber-400">Đang trong ca</div>
+        </div>
+
+        <div class="bg-[#1e232a] p-5 rounded-2xl border border-slate-800 space-y-2">
+            <div class="flex justify-between text-slate-400 text-xs uppercase font-bold">
+                <span>Lịch PT 1:1 Hôm Nay</span>
+                <i class="fa-solid fa-calendar-check text-amber-400"></i>
+            </div>
+            <div class="text-2xl font-black text-amber-400">@Model.SoBuoiTapHomNay Buổi Tập</div>
+            <div class="text-[11px] text-slate-400">@Model.SoBuoiDaHoanThanh buổi đã hoàn thành</div>
+        </div>
+
+        <div class="bg-[#1e232a] p-5 rounded-2xl border border-slate-800 space-y-2">
+            <div class="flex justify-between text-slate-400 text-xs uppercase font-bold">
+                <span>Hội Viên Quản Lý</span>
+                <i class="fa-solid fa-users text-amber-400"></i>
+            </div>
+            <div class="text-2xl font-black text-white">@Model.TongHoiVienQuanLy Hội Viên</div>
+            <div class="text-[11px] text-emerald-400">Đang theo dõi</div>
+        </div>
+
+        <div class="bg-[#1e232a] p-5 rounded-2xl border border-slate-800 space-y-2">
+            <div class="flex justify-between text-slate-400 text-xs uppercase font-bold">
+                <span>Đánh Giá HLV</span>
+                <i class="fa-solid fa-star text-amber-400"></i>
+            </div>
+            <div class="text-2xl font-black text-white">@Model.DanhGiaTrungBinh.ToString("0.0") / 5.0</div>
+            <div class="text-[11px] text-amber-400">Dựa trên @Model.TongLuotDanhGia lượt đánh giá</div>
+        </div>
+    </div>
+
+    <!-- KHU VỰC CHÍNH -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- LỊCH DẠY THẬT TỪ DATABASE -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-[#1e232a] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days"></i>
+                        <span>Lịch Dạy & Ca Phân Công Trong Ngày</span>
+                    </h3>
+                    <span class="text-xs font-mono text-slate-400">Hôm nay: @DateTime.Now.ToString("dd/MM/yyyy")</span>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    @if (Model.DanhSachLichTap.Any())
+                    {
+                        @foreach (var item in Model.DanhSachLichTap)
+                        {
+                            <div class="flex items-center justify-between bg-[#161a20] p-4 rounded-xl border border-slate-800">
+                                <div class="flex items-center gap-4">
+                                    <span class="font-mono font-bold text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-lg border border-amber-400/20">@item.KhungGio</span>
+                                    <div>
+                                        <div class="font-bold text-white text-sm">Hội viên: @item.TenHoiVien</div>
+                                        <div class="text-slate-400">Nội dung: @item.NoiDungTap</div>
+                                    </div>
+                                </div>
+                                <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg font-semibold">@item.TrangThai</span>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-slate-400 text-center py-4">Hôm nay không có lịch dạy nào.</div>
+                    }
+                </div>
+            </div>
+
+            <!-- BIỂU ĐỒ CÂN NẶNG TỪ DATABASE -->
+            <div class="bg-[#1e232a] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">
+                    Tiến Độ Cân Nặng Hội Viên
+                </h3>
+                <div class="h-60 w-full">
+                    <canvas id="ptProgressChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- HỒ SƠ HỘI VIÊN -->
+        <div class="space-y-6">
+            <div class="bg-[#1e232a] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide border-b border-slate-800 pb-3">
+                    Hồ Sơ & Chỉ Số Sức Khỏe
+                </h3>
+
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="block text-slate-400 mb-1 font-semibold">Tra cứu hội viên:</label>
+                        <select id="memberSelect" onchange="loadMemberData(this.value)" class="w-full bg-[#161a20] border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+                            @foreach (var hv in Model.DanhSachHoiVien)
+                            {
+                                <option value="@hv.Id">@hv.HoTen (@hv.MaHoiVien)</option>
+                            }
+                        </select>
+                    </div>
+
+                    @if (Model.HoiVienChon != null)
+                    {
+                        <div class="grid grid-cols-3 gap-2 text-center pt-2">
+                            <div class="bg-[#161a20] p-3 rounded-xl border border-slate-800">
+                                <div class="text-[10px] text-slate-400 uppercase">Chiều Cao</div>
+                                <div id="m_height" class="font-bold text-white text-sm mt-1">@Model.HoiVienChon.ChieuCao cm</div>
+                            </div>
+                            <div class="bg-[#161a20] p-3 rounded-xl border border-slate-800">
+                                <div class="text-[10px] text-slate-400 uppercase">Cân Nặng</div>
+                                <div id="m_weight" class="font-bold text-amber-400 text-sm mt-1">@Model.HoiVienChon.CanNang kg</div>
+                            </div>
+                            <div class="bg-[#161a20] p-3 rounded-xl border border-slate-800">
+                                <div class="text-[10px] text-slate-400 uppercase">BMI</div>
+                                <div id="m_bmi" class="font-bold text-emerald-400 text-sm mt-1">@Model.HoiVienChon.BMI</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-[#161a20] p-3 rounded-xl border border-slate-800 space-y-1">
+                            <div class="text-[10px] text-amber-400 font-bold uppercase">Mục Tiêu Tập Luyện:</div>
+                            <div id="m_goal" class="text-slate-200">@Model.HoiVienChon.MucTieu</div>
+                        </div>
+
+                        <div class="bg-[#161a20] p-3 rounded-xl border border-slate-800 space-y-1">
+                            <div class="text-[10px] text-rose-400 font-bold uppercase">Tình Trạng Sức Khỏe:</div>
+                            <div id="m_health" class="text-slate-300">@Model.HoiVienChon.TinhTrangSucKhoe</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- MODAL CẬP NHẬT KẾT QUẢ TẬP -->
+<div id="updateResultModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#1e232a] border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+            <h3 class="text-amber-400 font-bold text-sm uppercase flex items-center gap-2">
+                <i class="fa-solid fa-pen-to-square"></i> Cập Nhật Chỉ Số Sức Khỏe
+            </h3>
+            <button onclick="toggleModal('updateResultModal', false)" class="text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <form action="/PT/CapNhatChiSo" method="post" class="space-y-4 text-xs">
+            <div>
+                <label class="block text-slate-400 mb-1 font-semibold">Chọn hội viên:</label>
+                <select name="hoiVienId" class="w-full bg-[#161a20] border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+                    @foreach (var hv in Model.DanhSachHoiVien)
+                    {
+                        <option value="@hv.Id">@hv.HoTen (@hv.MaHoiVien)</option>
+                    }
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-slate-400 mb-1 font-semibold">Chiều cao (cm):</label>
+                    <input type="number" step="0.1" name="chieuCao" placeholder="170" required class="w-full bg-[#161a20] border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400" />
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1 font-semibold">Cân nặng (kg):</label>
+                    <input type="number" step="0.1" name="canNang" placeholder="65.5" required class="w-full bg-[#161a20] border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400" />
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-slate-400 mb-1 font-semibold">Tình trạng sức khỏe / Ghi chú:</label>
+                <textarea name="ghiChu" rows="3" placeholder="Ghi chú thêm về buổi tập..." class="w-full bg-[#161a20] border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="toggleModal('updateResultModal', false)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2 rounded-xl transition">Hủy</button>
+                <button type="submit" class="bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold px-4 py-2 rounded-xl transition">Lưu Kết Quả</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- SCRIPT VẼ BIỂU ĐỒ, GỌI AJAX VÀ XỬ LÝ MODAL -->
+<script>
+    let chartInstance = null;
+
+    const initialLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HoiVienChon?.LabelsTuan ?? new List<string>()));
+    const initialWeights = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HoiVienChon?.LichSuCanNang ?? new List<double>()));
+
+    function toggleModal(id, show) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        if (show) modal.classList.remove('hidden');
+        else modal.classList.add('hidden');
+    }
+
+    function renderChart(labels, data) {
+        const ctx = document.getElementById('ptProgressChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Cân Nặng (kg)',
+                    data: data,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#94a3b8' } } },
+                scales: {
+                    x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } },
+                    y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } }
+                }
+            }
+        });
+    }
+
+    async function loadMemberData(memberId) {
+        try {
+            const response = await fetch(`/PT/GetMemberDetails/${memberId}`);
+            if (!response.ok) return;
+
+            const data = await response.json();
+            document.getElementById('m_height').innerText = `${data.chieuCao} cm`;
+            document.getElementById('m_weight').innerText = `${data.canNang} kg`;
+            document.getElementById('m_bmi').innerText = data.bmi;
+            document.getElementById('m_goal').innerText = data.mucTieu;
+            document.getElementById('m_health').innerText = data.sucKhoe;
+
+            renderChart(data.labels, data.weights);
+        } catch (err) {
+            console.error('Lỗi khi tải dữ liệu hội viên:', err);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        renderChart(initialLabels, initialWeights);
+    });
+</script>

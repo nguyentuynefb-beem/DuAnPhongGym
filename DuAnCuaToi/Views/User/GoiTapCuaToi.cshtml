@@ -1,0 +1,904 @@
+﻿@model List<DuAnCuaToi.Models.DangKyGoiTap>
+
+@{
+    Layout = null;
+
+    var tenHienThi =
+        Context.Session.GetString("UserName")
+        ?? "Hội viên";
+
+    var danhSachGoi =
+        ViewBag.DanhSachGoi as List<DuAnCuaToi.Models.GoiTap>
+        ?? new List<DuAnCuaToi.Models.GoiTap>();
+
+    var hoaDonChoThanhToan =
+        ViewBag.HoaDonChoThanhToan as List<DuAnCuaToi.Models.HoaDon>
+        ?? new List<DuAnCuaToi.Models.HoaDon>();
+}
+
+<!DOCTYPE html>
+
+<html lang="vi">
+
+<head>
+
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title>Gói tập của tôi - SmartGym</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+</head>
+
+<body class="min-h-screen bg-slate-950 text-slate-100">
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+
+    <!-- ===================================================== -->
+    <!-- HEADER -->
+    <!-- ===================================================== -->
+
+    <div class="flex flex-col md:flex-row
+                md:items-center
+                md:justify-between
+                gap-4 mb-8">
+
+        <div>
+
+            <div class="flex items-center gap-3">
+
+                <div class="w-12 h-12
+                            rounded-2xl
+                            bg-orange-500/10
+                            border border-orange-500/20
+                            flex items-center justify-center">
+
+                    <i class="fa-solid fa-id-card
+                              text-orange-400
+                              text-xl"></i>
+
+                </div>
+
+                <div>
+
+                    <h1 class="text-3xl font-black text-white">
+                        Gói tập của tôi
+                    </h1>
+
+                    <p class="text-sm text-slate-400 mt-1">
+                        Xin chào @tenHienThi
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <a asp-controller="User"
+           asp-action="Index"
+           class="inline-flex items-center justify-center
+                  gap-2
+                  px-5 py-3
+                  rounded-xl
+                  bg-slate-800
+                  border border-slate-700
+                  hover:bg-slate-700
+                  transition
+                  text-sm font-semibold">
+
+            <i class="fa-solid fa-arrow-left"></i>
+
+            Quay lại
+
+        </a>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- THÔNG BÁO -->
+    <!-- ===================================================== -->
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="mb-6
+                    rounded-2xl
+                    border border-emerald-500/20
+                    bg-emerald-500/10
+                    px-5 py-4
+                    text-emerald-300">
+
+            <i class="fa-solid fa-circle-check me-2"></i>
+
+            @TempData["Success"]
+
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="mb-6
+                    rounded-2xl
+                    border border-red-500/20
+                    bg-red-500/10
+                    px-5 py-4
+                    text-red-300">
+
+            <i class="fa-solid fa-circle-exclamation me-2"></i>
+
+            @TempData["Error"]
+
+        </div>
+    }
+
+
+    <!-- ===================================================== -->
+    <!-- ĐĂNG KÝ GÓI TẬP -->
+    <!-- ===================================================== -->
+
+    <section class="mb-10">
+
+        <div class="flex items-center justify-between mb-5">
+
+            <div>
+
+                <p class="text-xs
+                          uppercase
+                          tracking-widest
+                          text-orange-400
+                          font-bold">
+
+                    SMARTGYM
+
+                </p>
+
+                <h2 class="text-2xl font-black text-white mt-1">
+
+                    Đăng ký gói tập
+
+                </h2>
+
+                <p class="text-sm text-slate-400 mt-1">
+
+                    Chọn gói phù hợp với nhu cầu của bạn.
+                    Thanh toán được thực hiện bằng chuyển khoản.
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+        @if (danhSachGoi.Any())
+        {
+            <div class="grid grid-cols-1
+                        md:grid-cols-2
+                        xl:grid-cols-3
+                        gap-5">
+
+                @foreach (var goi in danhSachGoi)
+                {
+                    <div class="group
+                                bg-slate-900
+                                border border-slate-800
+                                hover:border-orange-500/40
+                                rounded-3xl
+                                p-6
+                                shadow-xl
+                                transition">
+
+                        <!-- HEADER -->
+
+                        <div class="flex items-start
+                                    justify-between
+                                    gap-3">
+
+                            <div>
+
+                                <div class="inline-flex
+                                            items-center
+                                            px-2.5 py-1
+                                            rounded-lg
+                                            bg-orange-500/10
+                                            border border-orange-500/20
+                                            text-orange-400
+                                            text-[11px]
+                                            font-bold">
+
+                                    @goi.MaGoi
+
+                                </div>
+
+                                <h3 class="text-xl
+                                           font-black
+                                           text-white
+                                           mt-3">
+
+                                    @goi.TenGoi
+
+                                </h3>
+
+                            </div>
+
+                            @if (goi.IsKhuyenMai)
+                            {
+                                <span class="px-2.5 py-1
+                                             rounded-lg
+                                             bg-emerald-500/10
+                                             border border-emerald-500/20
+                                             text-emerald-400
+                                             text-[11px]
+                                             font-bold">
+
+                                    KHUYẾN MÃI
+
+                                </span>
+                            }
+
+                        </div>
+
+
+                        <!-- GIÁ -->
+
+                        <div class="mt-6">
+
+                            <p class="text-xs text-slate-500">
+                                Giá gói
+                            </p>
+
+                            <div class="flex items-end gap-2 mt-1">
+
+                                <span class="text-3xl
+                                             font-black
+                                             text-orange-400">
+
+                                    @goi.Gia.ToString("N0")
+
+                                </span>
+
+                                <span class="text-sm
+                                             text-slate-400
+                                             mb-1">
+
+                                    VNĐ
+
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- THỜI HẠN -->
+
+                        <div class="mt-5
+                                    grid grid-cols-2
+                                    gap-3">
+
+                            <div class="rounded-xl
+                                        bg-slate-950
+                                        p-3">
+
+                                <p class="text-[11px]
+                                          text-slate-500">
+
+                                    Thời hạn
+
+                                </p>
+
+                                <p class="font-bold mt-1">
+
+                                    @goi.ThoiHanNgay ngày
+
+                                </p>
+
+                            </div>
+
+                            <div class="rounded-xl
+                                        bg-slate-950
+                                        p-3">
+
+                                <p class="text-[11px]
+                                          text-slate-500">
+
+                                    Mã gói
+
+                                </p>
+
+                                <p class="font-bold mt-1">
+
+                                    @goi.MaGoi
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- QUYỀN LỢI -->
+
+                        @if (!string.IsNullOrWhiteSpace(goi.QuyenLoi))
+                        {
+                            <div class="mt-5">
+
+                                <p class="text-xs
+                                          font-bold
+                                          text-orange-400
+                                          mb-2">
+
+                                    <i class="fa-solid fa-star me-1"></i>
+
+                                    Quyền lợi
+
+                                </p>
+
+                                <div class="rounded-xl
+                                            bg-slate-950
+                                            border border-slate-800
+                                            p-3
+                                            text-sm
+                                            text-slate-300
+                                            whitespace-pre-line">
+
+                                    @goi.QuyenLoi
+
+                                </div>
+
+                            </div>
+                        }
+
+
+                        <!-- DỊCH VỤ -->
+
+                        @if (goi.GoiTapDichVus != null &&
+                             goi.GoiTapDichVus.Any())
+                        {
+                            <div class="mt-5">
+
+                                <p class="text-xs
+                                          font-bold
+                                          text-slate-300
+                                          mb-2">
+
+                                    <i class="fa-solid fa-gift
+                                              text-violet-400
+                                              me-1"></i>
+
+                                    Dịch vụ đi kèm
+
+                                </p>
+
+                                <div class="space-y-2">
+
+                                    @foreach (var dv in goi.GoiTapDichVus)
+                                    {
+                                        <div class="flex items-center gap-2
+                                                    text-xs
+                                                    text-slate-400">
+
+                                            <i class="fa-solid
+                                                      fa-circle-check
+                                                      text-emerald-400"></i>
+
+                                            @(dv.DichVu?.TenDichVu ?? "Dịch vụ")
+
+                                        </div>
+                                    }
+
+                                </div>
+
+                            </div>
+                        }
+
+
+                        <!-- BUTTON -->
+
+                        <form asp-controller="User"
+                              asp-action="DangKyGoiTap"
+                              method="post"
+                              class="mt-6">
+
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden"
+                                   name="goiTapId"
+                                   value="@goi.Id" />
+
+                            <button type="submit"
+                                    class="w-full
+                                           py-3.5
+                                           rounded-xl
+                                           bg-orange-500
+                                           hover:bg-orange-400
+                                           text-white
+                                           font-bold
+                                           transition
+                                           shadow-lg
+                                           shadow-orange-500/10">
+
+                                <i class="fa-solid fa-cart-plus me-2"></i>
+
+                                Đăng ký gói này
+
+                            </button>
+
+                        </form>
+
+                    </div>
+                }
+
+            </div>
+        }
+        else
+        {
+            <div class="rounded-3xl
+                        border border-slate-800
+                        bg-slate-900
+                        p-10
+                        text-center">
+
+                <i class="fa-solid fa-box-open
+                          text-4xl
+                          text-slate-600"></i>
+
+                <p class="mt-4
+                          text-slate-400">
+
+                    Hiện chưa có gói tập nào được mở bán.
+
+                </p>
+
+            </div>
+        }
+
+    </section>
+
+
+    <!-- ===================================================== -->
+    <!-- HÓA ĐƠN CHỜ THANH TOÁN -->
+    <!-- ===================================================== -->
+
+    @if (hoaDonChoThanhToan.Any())
+    {
+        <section class="mb-10">
+
+            <div class="mb-5">
+
+                <p class="text-xs
+                          uppercase
+                          tracking-widest
+                          text-yellow-400
+                          font-bold">
+
+                    THANH TOÁN
+
+                </p>
+
+                <h2 class="text-2xl
+                           font-black
+                           text-white
+                           mt-1">
+
+                    Đăng ký chưa thanh toán
+
+                </h2>
+
+            </div>
+
+
+            <div class="space-y-4">
+
+                @foreach (var hd in hoaDonChoThanhToan)
+                {
+                    var dk = hd.DangKyGoiTap;
+                    var goi = dk?.GoiTap;
+
+                    <div class="rounded-2xl
+                                border border-yellow-500/20
+                                bg-yellow-500/5
+                                p-5">
+
+                        <div class="flex flex-col
+                                    lg:flex-row
+                                    lg:items-center
+                                    lg:justify-between
+                                    gap-5">
+
+                            <div>
+
+                                <div class="flex items-center gap-2">
+
+                                    <span class="px-2.5 py-1
+                                                 rounded-lg
+                                                 bg-yellow-500/10
+                                                 text-yellow-400
+                                                 text-xs
+                                                 font-bold">
+
+                                        HÓA ĐƠN #@hd.Id
+
+                                    </span>
+
+                                    <span class="text-xs
+                                                 text-slate-500">
+
+                                        @hd.NgayLap.ToString("dd/MM/yyyy HH:mm")
+
+                                    </span>
+
+                                </div>
+
+                                <h3 class="text-lg
+                                           font-bold
+                                           text-white
+                                           mt-3">
+
+                                    @(goi?.TenGoi ?? "Gói tập")
+
+                                </h3>
+
+                                <p class="text-sm
+                                          text-slate-400
+                                          mt-1">
+
+                                    Tổng tiền:
+
+                                    <span class="text-orange-400
+                                                 font-bold">
+
+                                        @hd.TongTien.ToString("N0") VNĐ
+
+                                    </span>
+
+                                </p>
+
+                            </div>
+
+
+                            <a asp-controller="User"
+                               asp-action="ThanhToanGoiTap"
+                               asp-route-id="@hd.Id"
+                               class="inline-flex
+                                      items-center
+                                      justify-center
+                                      gap-2
+                                      px-5 py-3
+                                      rounded-xl
+                                      bg-orange-500
+                                      hover:bg-orange-400
+                                      font-bold
+                                      transition">
+
+                                <i class="fa-solid fa-building-columns"></i>
+
+                                Thanh toán chuyển khoản
+
+                            </a>
+
+                        </div>
+
+                    </div>
+                }
+
+            </div>
+
+        </section>
+    }
+
+
+    <!-- ===================================================== -->
+    <!-- LỊCH SỬ GÓI -->
+    <!-- ===================================================== -->
+
+    <section>
+
+        <div class="mb-5">
+
+            <p class="text-xs
+                      uppercase
+                      tracking-widest
+                      text-slate-500
+                      font-bold">
+
+                LỊCH SỬ
+
+            </p>
+
+            <h2 class="text-2xl
+                       font-black
+                       text-white
+                       mt-1">
+
+                Các gói đã đăng ký
+
+            </h2>
+
+        </div>
+
+
+        <div class="space-y-4">
+
+            @if (Model.Any())
+            {
+                foreach (var item in Model)
+                {
+                    var dangHoatDong =
+                        item.TrangThai &&
+                        item.NgayHetHan >= DateTime.Now;
+
+                    var soNgayConLai =
+                        (item.NgayHetHan.Date -
+                         DateTime.Now.Date).Days;
+
+                    <div class="bg-slate-900
+                                border border-slate-800
+                                rounded-2xl
+                                p-6">
+
+                        <div class="flex flex-col
+                                    md:flex-row
+                                    md:items-center
+                                    md:justify-between
+                                    gap-4">
+
+                            <div>
+
+                                <h3 class="text-xl
+                                           font-black
+                                           text-white">
+
+                                    @item.GoiTap?.TenGoi
+
+                                </h3>
+
+                                <p class="text-sm
+                                          text-slate-500
+                                          mt-1">
+
+                                    Mã gói:
+                                    @item.GoiTap?.MaGoi
+
+                                </p>
+
+                            </div>
+
+
+                            @if (dangHoatDong)
+                            {
+                                <span class="px-3 py-2
+                                             rounded-xl
+                                             bg-emerald-500/10
+                                             border border-emerald-500/20
+                                             text-emerald-400
+                                             text-sm
+                                             font-bold">
+
+                                    <i class="fa-solid
+                                              fa-circle-check me-1"></i>
+
+                                    Đang hoạt động
+
+                                </span>
+                            }
+                            else if (!item.TrangThai)
+                            {
+                                <span class="px-3 py-2
+                                             rounded-xl
+                                             bg-yellow-500/10
+                                             border border-yellow-500/20
+                                             text-yellow-400
+                                             text-sm
+                                             font-bold">
+
+                                    <i class="fa-solid
+                                              fa-clock me-1"></i>
+
+                                    Chờ thanh toán
+
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="px-3 py-2
+                                             rounded-xl
+                                             bg-red-500/10
+                                             border border-red-500/20
+                                             text-red-400
+                                             text-sm
+                                             font-bold">
+
+                                    <i class="fa-solid
+                                              fa-circle-xmark me-1"></i>
+
+                                    Đã hết hạn
+
+                                </span>
+                            }
+
+                        </div>
+
+
+                        <div class="grid grid-cols-1
+                                    md:grid-cols-3
+                                    gap-4 mt-6">
+
+                            <div class="bg-slate-950
+                                        rounded-xl
+                                        p-4">
+
+                                <p class="text-xs text-slate-500">
+                                    Ngày đăng ký
+                                </p>
+
+                                <p class="font-bold mt-1">
+
+                                    @item.NgayDangKy.ToString("dd/MM/yyyy")
+
+                                </p>
+
+                            </div>
+
+
+                            <div class="bg-slate-950
+                                        rounded-xl
+                                        p-4">
+
+                                <p class="text-xs text-slate-500">
+                                    Ngày hết hạn
+                                </p>
+
+                                <p class="font-bold mt-1">
+
+                                    @item.NgayHetHan.ToString("dd/MM/yyyy")
+
+                                </p>
+
+                            </div>
+
+
+                            <div class="bg-slate-950
+                                        rounded-xl
+                                        p-4">
+
+                                <p class="text-xs text-slate-500">
+                                    Trạng thái thời hạn
+                                </p>
+
+                                @if (dangHoatDong)
+                                {
+                                    <p class="font-bold
+                                              text-emerald-400
+                                              mt-1">
+
+                                        Còn @soNgayConLai ngày
+
+                                    </p>
+                                }
+                                else if (!item.TrangThai)
+                                {
+                                    <p class="font-bold
+                                              text-yellow-400
+                                              mt-1">
+
+                                        Chưa kích hoạt
+
+                                    </p>
+                                }
+                                else
+                                {
+                                    <p class="font-bold
+                                              text-red-400
+                                              mt-1">
+
+                                        Đã hết hạn
+
+                                    </p>
+                                }
+
+                            </div>
+
+                        </div>
+
+
+                        @if (!string.IsNullOrWhiteSpace(item.GoiTap?.QuyenLoi))
+                        {
+                            <div class="mt-5">
+
+                                <p class="text-sm
+                                          font-bold
+                                          text-orange-400 mb-2">
+
+                                    <i class="fa-solid fa-star me-1"></i>
+
+                                    Quyền lợi gói
+
+                                </p>
+
+                                <div class="bg-slate-950
+                                            rounded-xl
+                                            p-4
+                                            text-sm
+                                            text-slate-300
+                                            whitespace-pre-line">
+
+                                    @item.GoiTap.QuyenLoi
+
+                                </div>
+
+                            </div>
+                        }
+
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center
+                            py-16
+                            bg-slate-900
+                            rounded-2xl
+                            border border-slate-800">
+
+                    <i class="fa-solid fa-id-card
+                              text-slate-600
+                              text-4xl"></i>
+
+                    <p class="text-slate-400 mt-4">
+
+                        Bạn chưa có gói tập nào.
+
+                    </p>
+
+                </div>
+            }
+
+        </div>
+
+    </section>
+
+
+    <!-- ===================================================== -->
+    <!-- LƯU Ý -->
+    <!-- ===================================================== -->
+
+    <div class="mt-8
+                rounded-2xl
+                border border-slate-800
+                bg-slate-900/60
+                px-5 py-4">
+
+        <div class="flex gap-3">
+
+            <i class="fa-solid fa-circle-info
+                      text-blue-400
+                      mt-1"></i>
+
+            <p class="text-xs
+                      leading-6
+                      text-slate-500">
+
+                Sau khi đăng ký, hóa đơn sẽ được tạo trong hệ thống.
+                Bạn thực hiện chuyển khoản theo thông tin trên trang thanh toán.
+                Gói tập chỉ được kích hoạt sau khi lễ tân xác nhận giao dịch.
+
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

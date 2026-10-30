@@ -1,0 +1,545 @@
+﻿@model List<DuAnCuaToi.Models.HoaDon>
+
+@{
+    Layout = null;
+
+    var currentUser =
+        ViewBag.CurrentUser as DuAnCuaToi.Models.NguoiDung;
+
+    var tenHienThi =
+        currentUser?.HoTen
+        ?? Context.Session.GetString("UserName")
+        ?? "Hội viên";
+
+    decimal tongTien =
+        ViewBag.TongTienDaThanhToan ?? 0m;
+}
+
+<!DOCTYPE html>
+
+<html lang="vi"
+      class="bg-slate-950 text-slate-100">
+
+<head>
+
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title>Lịch sử thanh toán - Smart Gym</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+</head>
+
+
+<body class="min-h-screen bg-slate-950 text-slate-100">
+
+<div class="min-h-screen">
+
+
+    <!-- HEADER -->
+
+    <header class="h-16
+                   bg-slate-900
+                   border-b border-slate-800
+                   flex items-center justify-between
+                   px-4 sm:px-6">
+
+        <div class="flex items-center gap-3">
+
+            <div class="w-9 h-9
+                        bg-orange-500
+                        rounded-lg
+                        flex items-center
+                        justify-center">
+
+                <i class="fa-solid fa-dumbbell"></i>
+
+            </div>
+
+            <span class="font-bold">
+                SMART<span class="text-orange-500">GYM</span>
+            </span>
+
+        </div>
+
+
+        <div class="flex items-center gap-4">
+
+            <span class="text-sm text-slate-300">
+                @tenHienThi
+            </span>
+
+            <a asp-controller="Home"
+               asp-action="Logout"
+               class="text-slate-400 hover:text-red-400">
+
+                <i class="fa-solid fa-right-from-bracket"></i>
+
+            </a>
+
+        </div>
+
+    </header>
+
+
+    <!-- MAIN -->
+
+    <main class="max-w-6xl mx-auto p-6">
+
+
+        <!-- TITLE -->
+
+        <div class="flex flex-col
+                    sm:flex-row
+                    sm:items-center
+                    sm:justify-between
+                    gap-4
+                    mb-8">
+
+            <div>
+
+                <h1 class="text-2xl font-black">
+
+                    <i class="fa-solid fa-receipt
+                              text-orange-500 mr-2"></i>
+
+                    Lịch sử thanh toán
+
+                </h1>
+
+                <p class="text-sm text-slate-400 mt-1">
+
+                    Theo dõi các hóa đơn và khoản thanh toán của bạn.
+
+                </p>
+
+            </div>
+
+
+            <a asp-controller="User"
+               asp-action="Index"
+               class="px-4 py-2
+                      bg-slate-800
+                      hover:bg-slate-700
+                      rounded-xl
+                      text-sm">
+
+                <i class="fa-solid fa-arrow-left"></i>
+
+                Trang chủ
+
+            </a>
+
+        </div>
+
+
+        <!-- =====================================================
+             THỐNG KÊ
+        ====================================================== -->
+
+        <div class="grid
+                    grid-cols-1
+                    md:grid-cols-3
+                    gap-4
+                    mb-8">
+
+
+            <!-- HÓA ĐƠN -->
+
+            <div class="bg-slate-900
+                        border border-slate-800
+                        rounded-2xl
+                        p-5">
+
+                <p class="text-xs text-slate-500">
+                    Tổng hóa đơn
+                </p>
+
+                <p class="text-2xl
+                          font-black
+                          mt-2">
+
+                    @ViewBag.TongHoaDon
+
+                </p>
+
+            </div>
+
+
+            <!-- ĐÃ THANH TOÁN -->
+
+            <div class="bg-slate-900
+                        border border-emerald-500/20
+                        rounded-2xl
+                        p-5">
+
+                <p class="text-xs text-slate-500">
+                    Đã thanh toán
+                </p>
+
+                <p class="text-2xl
+                          font-black
+                          text-emerald-400
+                          mt-2">
+
+                    @ViewBag.SoHoaDonDaThanhToan
+
+                </p>
+
+            </div>
+
+
+            <!-- TỔNG TIỀN -->
+
+            <div class="bg-slate-900
+                        border border-orange-500/20
+                        rounded-2xl
+                        p-5">
+
+                <p class="text-xs text-slate-500">
+                    Tổng tiền đã thanh toán
+                </p>
+
+                <p class="text-xl
+                          font-black
+                          text-orange-400
+                          mt-2">
+
+                    @tongTien.ToString("N0") VNĐ
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             BẢNG HÓA ĐƠN
+        ====================================================== -->
+
+        @if (Model != null && Model.Any())
+        {
+
+            <div class="bg-slate-900
+                        border border-slate-800
+                        rounded-2xl
+                        overflow-hidden">
+
+                <div class="overflow-x-auto">
+
+                    <table class="w-full text-sm">
+
+                        <thead class="bg-slate-950">
+
+                            <tr>
+
+                                <th class="text-left
+                                           px-5 py-4
+                                           text-slate-500">
+
+                                    Hóa đơn
+
+                                </th>
+
+                                <th class="text-left
+                                           px-5 py-4
+                                           text-slate-500">
+
+                                    Gói tập
+
+                                </th>
+
+                                <th class="text-left
+                                           px-5 py-4
+                                           text-slate-500">
+
+                                    Ngày lập
+
+                                </th>
+
+                                <th class="text-right
+                                           px-5 py-4
+                                           text-slate-500">
+
+                                    Số tiền
+
+                                </th>
+
+                                <th class="text-left
+                                           px-5 py-4
+                                           text-slate-500">
+
+                                    Thanh toán
+
+                                </th>
+
+                                <th class="text-left
+                                           px-5 py-4
+                                           text-slate-500">
+
+                                    Trạng thái
+
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            @foreach (var hoaDon in Model)
+                            {
+
+                                var thanhToan =
+                                    hoaDon.ThanhToans?
+                                        .OrderByDescending(x => x.NgayThanhToan)
+                                        .FirstOrDefault();
+
+
+                                var daThanhToan =
+                                    string.Equals(
+                                        hoaDon.TrangThai,
+                                        "Đã thanh toán",
+                                        StringComparison.OrdinalIgnoreCase);
+
+
+                                <tr class="
+                                    border-t
+                                    border-slate-800
+                                    hover:bg-slate-800/50
+                                ">
+
+
+                                    <!-- ID -->
+
+                                    <td class="px-5 py-4">
+
+                                        <span class="font-bold">
+
+                                            #HD@hoaDon.Id
+
+                                        </span>
+
+                                    </td>
+
+
+                                    <!-- GÓI -->
+
+                                    <td class="px-5 py-4">
+
+                                        <div>
+
+                                            <p class="font-semibold text-white">
+
+                                                @(hoaDon.DangKyGoiTap?.GoiTap?.TenGoi
+                                                    ?? "Gói tập")
+
+                                            </p>
+
+                                            @if (hoaDon.DangKyGoiTap != null)
+                                            {
+
+                                                <p class="text-xs
+                                                          text-slate-500
+                                                          mt-1">
+
+                                                    Đăng ký:
+                                                    @hoaDon.DangKyGoiTap.NgayDangKy
+                                                        .ToString("dd/MM/yyyy")
+
+                                                </p>
+
+                                            }
+
+                                        </div>
+
+                                    </td>
+
+
+                                    <!-- NGÀY LẬP -->
+
+                                    <td class="px-5 py-4">
+
+                                        @hoaDon.NgayLap
+                                            .ToString("dd/MM/yyyy HH:mm")
+
+                                    </td>
+
+
+                                    <!-- TIỀN -->
+
+                                    <td class="px-5 py-4
+                                               text-right">
+
+                                        <span class="font-bold
+                                                     text-orange-400">
+
+                                            @hoaDon.TongTien.ToString("N0") VNĐ
+
+                                        </span>
+
+                                    </td>
+
+
+                                    <!-- THANH TOÁN -->
+
+                                    <td class="px-5 py-4">
+
+                                        @if (thanhToan != null)
+                                        {
+
+                                            <div>
+
+                                                <p class="text-white">
+
+                                                    @thanhToan.NgayThanhToan
+                                                        .ToString("dd/MM/yyyy HH:mm")
+
+                                                </p>
+
+                                                <p class="text-xs
+                                                          text-slate-500
+                                                          mt-1">
+
+                                                    @(string.IsNullOrWhiteSpace(
+                                                        thanhToan.PhuongThuc)
+                                                        ? "Không xác định"
+                                                        : thanhToan.PhuongThuc)
+
+                                                </p>
+
+                                            </div>
+
+                                        }
+                                        else
+                                        {
+
+                                            <span class="text-slate-500">
+
+                                                Chưa thanh toán
+
+                                            </span>
+
+                                        }
+
+                                    </td>
+
+
+                                    <!-- TRẠNG THÁI -->
+
+                                    <td class="px-5 py-4">
+
+                                        @if (daThanhToan)
+                                        {
+
+                                            <span class="
+                                                inline-flex
+                                                items-center
+                                                gap-2
+                                                px-3 py-1
+                                                rounded-full
+                                                bg-emerald-500/10
+                                                text-emerald-400
+                                                border border-emerald-500/20
+                                                text-xs
+                                                font-bold
+                                            ">
+
+                                                <i class="fa-solid
+                                                          fa-circle-check"></i>
+
+                                                Đã thanh toán
+
+                                            </span>
+
+                                        }
+                                        else
+                                        {
+
+                                            <span class="
+                                                inline-flex
+                                                items-center
+                                                gap-2
+                                                px-3 py-1
+                                                rounded-full
+                                                bg-amber-500/10
+                                                text-amber-400
+                                                border border-amber-500/20
+                                                text-xs
+                                                font-bold
+                                            ">
+
+                                                <i class="fa-solid
+                                                          fa-clock"></i>
+
+                                                Chưa thanh toán
+
+                                            </span>
+
+                                        }
+
+                                    </td>
+
+                                </tr>
+
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        }
+        else
+        {
+
+            <div class="bg-slate-900
+                        border border-slate-800
+                        rounded-2xl
+                        p-12
+                        text-center">
+
+                <i class="fa-solid
+                          fa-receipt
+                          text-5xl
+                          text-slate-600">
+                </i>
+
+                <h2 class="text-lg
+                           font-bold
+                           mt-4">
+
+                    Chưa có lịch sử thanh toán
+
+                </h2>
+
+                <p class="text-sm
+                          text-slate-500
+                          mt-2">
+
+                    Các hóa đơn của bạn sẽ xuất hiện tại đây.
+
+                </p>
+
+            </div>
+
+        }
+
+    </main>
+
+</div>
+
+</body>
+
+</html>

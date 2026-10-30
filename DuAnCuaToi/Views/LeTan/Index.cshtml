@@ -1,0 +1,239 @@
+﻿@{
+    ViewData["Title"] = "Dashboard Lễ Tân";
+    Layout = "_Layout";
+}
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<div class="max-w-7xl mx-auto my-6 px-2 sm:px-4 space-y-6 font-sans">
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-2xl text-sm flex items-center gap-2">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>@TempData["Success"]</span>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="p-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl text-sm flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    <!-- HEADER -->
+    <div class="bg-[#1e232a] border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-6 relative z-10">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-black text-amber-400 tracking-wide uppercase flex items-center gap-3">
+                    <i class="fa-solid fa-user-tie"></i>
+                    <span>Dashboard Lễ Tân</span>
+                </h1>
+                <p class="text-slate-300 text-sm mt-2">
+                    Xin chào <strong class="text-white font-bold">@Context.Session.GetString("UserName")</strong>, bạn đang đăng nhập với quyền <span class="text-amber-400 font-semibold">Lễ Tân</span>.
+                </p>
+            </div>
+
+            <div class="flex gap-3">
+                <a asp-action="EditProfile" class="btn btn-warning">
+                    <i class="fas fa-user-edit"></i>
+                    Thông tin cá nhân
+                </a>
+                <a asp-controller="Home" asp-action="Logout" class="btn btn-outline-danger">
+                    <i class="fas fa-right-from-bracket"></i>
+                    Đăng xuất
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="bg-[#1e232a] p-5 rounded-2xl border border-slate-800 space-y-2">
+            <div class="flex justify-between text-slate-400 text-xs uppercase font-bold">
+                <span>Hội Viên Đang Hoạt Động</span>
+                <i class="fa-solid fa-users text-amber-400"></i>
+            </div>
+            <div class="text-2xl font-black text-white">@ViewBag.HoiViens.Count</div>
+            <div class="text-[11px] text-emerald-400">Gói tập còn hiệu lực</div>
+        </div>
+
+        <div class="bg-[#1e232a] p-5 rounded-2xl border border-slate-800 space-y-2">
+            <div class="flex justify-between text-slate-400 text-xs uppercase font-bold">
+                <span>Chờ Thanh Toán</span>
+                <i class="fa-solid fa-hourglass-half text-amber-400"></i>
+            </div>
+            <div class="text-2xl font-black text-white">@ViewBag.DangKyChoThanhToan.Count</div>
+            <div class="text-[11px] text-amber-400">Đăng ký cần xử lý</div>
+        </div>
+
+        <div class="bg-[#1e232a] p-5 rounded-2xl border border-slate-800 space-y-2">
+            <div class="flex justify-between text-slate-400 text-xs uppercase font-bold">
+                <span>Hôm Nay</span>
+                <i class="fa-solid fa-calendar-day text-amber-400"></i>
+            </div>
+            <div class="text-lg font-bold text-white">@DateTime.Now.ToString("dd/MM/yyyy")</div>
+            <div class="text-[11px] text-slate-400">@DateTime.Now.ToString("dddd", new System.Globalization.CultureInfo("vi-VN"))</div>
+        </div>
+    </div>
+
+    <!-- ACTION CARDS -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        <!-- Card Điểm danh -->
+        <div class="bg-[#1e232a] border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div class="px-5 py-4 border-b border-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-user-check text-emerald-400"></i>
+                <h2 class="text-sm font-bold text-white uppercase tracking-wide">Điểm Danh Hội Viên</h2>
+            </div>
+            <div class="p-5 flex-1 flex flex-col">
+                <form asp-action="CheckIn" method="post" class="flex-1 flex flex-col gap-3">
+                    <label class="text-xs text-slate-400 font-semibold uppercase">Mã hội viên</label>
+                    <input name="maHoiVien"
+                           placeholder="Ví dụ: HV0001"
+                           class="w-full bg-[#161a20] border border-slate-800 rounded-xl px-3 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition" />
+                    <button type="submit"
+                            class="mt-auto bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-check"></i>
+                        Điểm danh
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Card QR -->
+        <div class="bg-[#1e232a] border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div class="px-5 py-4 border-b border-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-qrcode text-sky-400"></i>
+                <h2 class="text-sm font-bold text-white uppercase tracking-wide">QR Điểm Danh</h2>
+            </div>
+            <div class="p-5 flex-1 flex flex-col items-center justify-center text-center gap-4">
+                <p class="text-slate-400 text-xs">
+                    Hội viên dùng điện thoại quét QR này để tự điểm danh.
+                </p>
+                <a asp-controller="LeTan" asp-action="QRDiemDanh"
+                   class="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-orange-500/20 flex items-center gap-2">
+                    <i class="fa-solid fa-qrcode"></i>
+                    Hiển thị QR
+                </a>
+            </div>
+        </div>
+
+        <!-- Card Thanh toán -->
+        <div class="bg-[#1e232a] border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div class="px-5 py-4 border-b border-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-credit-card text-amber-400"></i>
+                <h2 class="text-sm font-bold text-white uppercase tracking-wide">Thanh Toán</h2>
+            </div>
+            <div class="p-5 flex-1 flex flex-col items-center justify-center text-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl border border-amber-500/20">
+                    <i class="fa-solid fa-credit-card"></i>
+                </div>
+                <p class="text-slate-400 text-xs">
+                    Thực hiện thanh toán gói tập cho hội viên.
+                </p>
+                <a href="#cho-thanh-toan"
+                   class="bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition shadow-lg flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-right"></i>
+                    Xem đăng ký chờ thanh toán
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- TABLE: Hội viên đang hoạt động -->
+    <div class="bg-[#1e232a] border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-people-group text-amber-400"></i>
+            <h2 class="text-sm font-bold text-white uppercase tracking-wide">Hội Viên Đang Hoạt Động</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead>
+                    <tr class="bg-[#161a20] text-slate-400 text-[11px] uppercase tracking-wide">
+                        <th class="px-5 py-3 font-semibold">Họ tên</th>
+                        <th class="px-5 py-3 font-semibold">Mã hội viên</th>
+                        <th class="px-5 py-3 font-semibold">Gói tập</th>
+                        <th class="px-5 py-3 font-semibold">Ngày hết hạn</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    @if (ViewBag.HoiViens.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="4" class="px-5 py-8 text-center text-slate-500 text-xs">
+                                Chưa có hội viên nào đang hoạt động.
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var item in ViewBag.HoiViens)
+                    {
+                        <tr class="hover:bg-white/5 transition">
+                            <td class="px-5 py-3 text-white font-medium">@item.NguoiDung.HoTen</td>
+                            <td class="px-5 py-3 text-slate-300 font-mono text-xs">@item.NguoiDung.MaHoiVien</td>
+                            <td class="px-5 py-3 text-slate-300">@item.GoiTap.TenGoi</td>
+                            <td class="px-5 py-3 text-slate-300">@item.NgayHetHan.ToString("dd/MM/yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TABLE: chờ thanh toán -->
+    <div id="cho-thanh-toan" class="bg-[#1e232a] border border-slate-800 rounded-2xl shadow-xl overflow-hidden scroll-mt-24">
+        <div class="px-5 py-4 border-b border-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-hourglass-half text-amber-400"></i>
+            <h2 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Đăng Ký Đang Chờ Thanh Toán</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead>
+                    <tr class="bg-[#161a20] text-slate-400 text-[11px] uppercase tracking-wide">
+                        <th class="px-5 py-3 font-semibold">Hội viên</th>
+                        <th class="px-5 py-3 font-semibold">Gói tập</th>
+                        <th class="px-5 py-3 font-semibold">Ngày đăng ký</th>
+                        <th class="px-5 py-3 font-semibold">Giá</th>
+                        <th class="px-5 py-3 font-semibold">Trạng thái</th>
+                        <th class="px-5 py-3 font-semibold text-right">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    @if (ViewBag.DangKyChoThanhToan.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="px-5 py-8 text-center text-slate-500 text-xs">
+                                Không có đăng ký nào đang chờ thanh toán.
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var item in ViewBag.DangKyChoThanhToan)
+                    {
+                        <tr class="hover:bg-white/5 transition">
+                            <td class="px-5 py-3 text-white font-medium">@item.NguoiDung.HoTen</td>
+                            <td class="px-5 py-3 text-slate-300">@item.GoiTap.TenGoi</td>
+                            <td class="px-5 py-3 text-slate-300">@item.NgayDangKy.ToString("dd/MM/yyyy")</td>
+                            <td class="px-5 py-3 text-slate-300">@item.GoiTap.Gia.ToString("N0") VNĐ</td>
+                            <td class="px-5 py-3">
+                                <span class="inline-flex items-center gap-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-semibold px-2.5 py-1 rounded-lg">
+                                    <i class="fa-solid fa-clock"></i>
+                                    Chưa thanh toán
+                                </span>
+                            </td>
+                            <td class="px-5 py-3 text-right">
+                                <a asp-controller="LeTan" asp-action="XacNhanThanhToan" asp-route-id="@item.HoaDonId"
+                                   class="inline-flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold px-3 py-2 rounded-xl transition">
+                                    <i class="fa-solid fa-credit-card"></i>
+                                    Thanh toán
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>

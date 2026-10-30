@@ -1,0 +1,256 @@
+﻿@model DuAnCuaToi.ViewModels.HealthProfileViewModel
+
+@{
+    ViewData["Title"] = "Hồ sơ sức khỏe";
+}
+
+<div class="hp-wrap">
+    <div class="hp-card">
+
+        <div class="hp-header">
+            <div class="hp-header-left">
+                <div class="hp-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+                <div>
+                    <h2>Hồ sơ sức khỏe</h2>
+                    <p>Theo dõi chỉ số cơ thể và lịch sử tập luyện của bạn</p>
+                </div>
+            </div>
+            <a href="@Url.Action("Index", "User")" class="hp-back">
+                <i class="fa-solid fa-arrow-left"></i> Trang chủ
+            </a>
+        </div>
+
+        <form asp-action="HealthProfile" method="post" id="healthForm">
+
+            @Html.AntiForgeryToken()
+            <input asp-for="HoiVienId" type="hidden" />
+
+            <div asp-validation-summary="All" class="hp-summary"></div>
+
+            <div class="hp-field">
+                <label>Họ tên</label>
+                <input asp-for="HoTen" class="hp-input" readonly />
+            </div>
+
+            <div class="hp-grid hp-grid-2">
+                <div class="hp-field">
+                    <label asp-for="ChieuCao"></label>
+                    <input asp-for="ChieuCao" class="hp-input" />
+                    <span asp-validation-for="ChieuCao" class="hp-error"></span>
+                </div>
+                <div class="hp-field">
+                    <label asp-for="CanNang"></label>
+                    <input asp-for="CanNang" class="hp-input" />
+                    <span asp-validation-for="CanNang" class="hp-error"></span>
+                </div>
+            </div>
+
+            <div class="hp-grid hp-grid-3">
+                <div class="hp-field">
+                    <label asp-for="VongNguc"></label>
+                    <input asp-for="VongNguc" class="hp-input" />
+                </div>
+                <div class="hp-field">
+                    <label asp-for="VongEo"></label>
+                    <input asp-for="VongEo" class="hp-input" />
+                </div>
+                <div class="hp-field">
+                    <label asp-for="VongHong"></label>
+                    <input asp-for="VongHong" class="hp-input" />
+                </div>
+            </div>
+
+            <div class="hp-field">
+                <label asp-for="TinhTrangSucKhoe"></label>
+                <textarea asp-for="TinhTrangSucKhoe" class="hp-input hp-textarea" rows="2"></textarea>
+            </div>
+
+            <div class="hp-field">
+                <label asp-for="BenhLy"></label>
+                <textarea asp-for="BenhLy" class="hp-input hp-textarea" rows="2"></textarea>
+            </div>
+
+            <div class="hp-bmi-box">
+                <div>
+                    <span class="hp-bmi-label">BMI hiện tại</span>
+                    <div class="hp-bmi-value"><span id="currentBmi">@Model.BMI</span></div>
+                </div>
+                <div>
+                    <span class="hp-bmi-label">Đánh giá</span>
+                    <div class="hp-bmi-rating" id="bmiRating">@Model.DanhGiaBMI</div>
+                </div>
+            </div>
+
+            <div class="hp-chart-card">
+                <h5><i class="fa-solid fa-chart-line"></i> Lịch sử cân nặng &amp; BMI</h5>
+                <canvas id="healthChart" height="120"></canvas>
+            </div>
+
+            <button type="submit" class="hp-btn-save">
+                <i class="fa-solid fa-floppy-disk"></i> Lưu hồ sơ sức khỏe
+            </button>
+
+        </form>
+
+    </div>
+</div>
+
+<style>
+    .hp-wrap { max-width: 880px; margin: 2rem auto; padding: 0 1rem; }
+
+    .hp-card {
+        background: rgba(15,23,42,.9);
+        border: 1px solid rgba(51,65,85,.8);
+        border-radius: 1.25rem;
+        box-shadow: 0 12px 30px rgba(0,0,0,.3);
+        padding: 2rem;
+    }
+
+    .hp-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.75rem;
+        flex-wrap: wrap;
+    }
+
+    .hp-header-left { display: flex; align-items: center; gap: .9rem; }
+
+    .hp-icon {
+        width: 3rem; height: 3rem;
+        border-radius: .9rem;
+        background: rgba(16,185,129,.12);
+        color: #34d399;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .hp-header h2 { color: #f8fafc; font-weight: 800; margin: 0; font-size: 1.3rem; }
+    .hp-header p { color: #94a3b8; margin: .15rem 0 0; font-size: .85rem; }
+
+    .hp-back {
+        color: #94a3b8;
+        text-decoration: none;
+        font-size: .85rem;
+        font-weight: 600;
+        padding: .5rem .9rem;
+        border-radius: .7rem;
+        border: 1px solid #334155;
+        transition: .2s ease;
+        white-space: nowrap;
+    }
+    .hp-back:hover { color: #f8fafc; background: #1e293b; }
+
+    .hp-summary { color: #f87171; margin-bottom: 1rem; }
+    .hp-summary ul { margin: 0; padding-left: 1.1rem; }
+    .hp-summary.validation-summary-valid { display: none; }
+    .hp-summary.validation-summary-errors {
+        background: rgba(239,68,68,.08);
+        border: 1px solid rgba(239,68,68,.25);
+        border-radius: .8rem;
+        padding: .8rem 1rem;
+    }
+
+    .hp-field { margin-bottom: 1.1rem; }
+
+    .hp-field label {
+        display: block;
+        color: #cbd5e1;
+        font-weight: 600;
+        font-size: .85rem;
+        margin-bottom: .4rem;
+    }
+
+    .hp-input {
+        width: 100%;
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: .75rem;
+        padding: .7rem .85rem;
+        color: #f8fafc;
+        outline: none;
+        font-size: .95rem;
+        transition: .15s ease;
+        box-sizing: border-box;
+    }
+    .hp-input:focus {
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16,185,129,.15);
+    }
+    .hp-input[readonly] { color: #94a3b8; background: #0b1220; }
+    .hp-input.input-validation-error { border-color: #ef4444; }
+
+    .hp-textarea { resize: vertical; }
+
+    .hp-error {
+        display: block;
+        color: #f87171;
+        font-size: .78rem;
+        margin-top: .3rem;
+    }
+    .hp-error.field-validation-valid { display: none; }
+
+    .hp-grid { display: grid; gap: 1rem; }
+    .hp-grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .hp-grid-3 { grid-template-columns: repeat(3, 1fr); }
+    @@media (max-width: 640px) {
+        .hp-grid-2, .hp-grid-3 { grid-template-columns: 1fr; }
+    }
+
+    .hp-bmi-box {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        background: rgba(16,185,129,.08);
+        border: 1px solid rgba(16,185,129,.2);
+        border-radius: .9rem;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
+    }
+    .hp-bmi-label { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: #6ee7b7; font-weight: 700; }
+    .hp-bmi-value { font-size: 1.4rem; font-weight: 800; color: #f8fafc; margin-top: .2rem; }
+    .hp-bmi-rating { font-size: 1rem; font-weight: 700; color: #f8fafc; margin-top: .2rem; }
+
+    .hp-chart-card {
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: .9rem;
+        padding: 1.1rem 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+    .hp-chart-card h5 {
+        color: #e2e8f0;
+        font-size: .9rem;
+        font-weight: 700;
+        margin: 0 0 .8rem;
+        display: flex; align-items: center; gap: .5rem;
+    }
+
+    .hp-btn-save {
+        width: 100%;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #fff;
+        border: none;
+        padding: .85rem 1.5rem;
+        border-radius: .85rem;
+        font-weight: 700;
+        font-size: .95rem;
+        cursor: pointer;
+        transition: .2s ease;
+        display: flex; align-items: center; justify-content: center; gap: .5rem;
+    }
+    .hp-btn-save:hover { filter: brightness(1.08); transform: translateY(-1px); }
+</style>
+
+@section Scripts {
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    @await Html.PartialAsync("_HealthScripts")
+
+}
