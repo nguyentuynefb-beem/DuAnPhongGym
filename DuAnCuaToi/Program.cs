@@ -14,10 +14,13 @@ builder.Services
     .AddHttpClient<IGeminiService, GeminiService>(client =>
     {
         // Tránh request treo quá lâu khi Gemini/API network gặp sự cố.
-        client.Timeout = TimeSpan.FromSeconds(60);
+        client.Timeout = TimeSpan.FromSeconds(20);
     });
 // Health service centralizes health/profile logic
 builder.Services.AddScoped<IHealthService, HealthService>();
+
+// AI Context Builder trích xuất từ UserController
+builder.Services.AddScoped<IAIContextBuilder, AIContextBuilder>();
 
 // Dịch vụ tổng hợp báo cáo doanh thu (đọc từ CSDL) + xuất file DOCX/PDF
 builder.Services.AddScoped<IRevenueReportService, RevenueReportService>();
@@ -28,12 +31,26 @@ QuestPDF.Settings.License = LicenseType.Community;
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddDistributedMemoryCache();
+
+// Cấu hình Session (duy trì để tương thích giao diện Razor)
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // Thời gian hết hạn phiên
+    options.IdleTimeout = TimeSpan.FromMinutes(60);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
+
+// Cấu hình CookieAuthentication chuẩn của ASP.NET Core
+builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Home/Index";
+        options.AccessDeniedPath = "/Home/Index";
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.IsEssential = true;
+    });
 
 var app = builder.Build();
 
@@ -70,7 +87,13 @@ using (var scope = app.Services.CreateScope())
             ? "Quản Trị Viên Hệ Thống"
             : admin.HoTen;
         admin.VaiTro = "Admin";
-        admin.MatKhauHash = BCrypt.Net.BCrypt.HashPassword(adminPassword);
+        
+        // Giữ nguyên mật khẩu hiện tại nếu đã có, chỉ cấp mật khẩu mặc định nếu hash trống
+        if (string.IsNullOrWhiteSpace(admin.MatKhauHash))
+        {
+            admin.MatKhauHash = BCrypt.Net.BCrypt.HashPassword(adminPassword);
+        }
+
         admin.IsOnline = false;
     }
 
@@ -87,8 +110,9 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
-// Kích hoạt Middleware Session (Đặt sau UseRouting và trước UseAuthorization/MapControllerRoute)
+// Kích hoạt Middleware Session & Authentication (Đặt sau UseRouting và trước UseAuthorization/MapControllerRoute)
 app.UseSession();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(

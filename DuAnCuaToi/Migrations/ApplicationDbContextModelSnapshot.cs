@@ -155,6 +155,9 @@ namespace DuAnCuaToi.Migrations
                     b.Property<decimal>("Gia")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsKhuyenMai")
                         .HasColumnType("bit");
 
@@ -296,6 +299,9 @@ namespace DuAnCuaToi.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsOnline")
                         .HasColumnType("bit");
 
@@ -315,13 +321,10 @@ namespace DuAnCuaToi.Migrations
                     b.Property<string>("PTPhuTrach")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("TenDangNhap")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("VaiTro")
                         .IsRequired()
@@ -332,6 +335,10 @@ namespace DuAnCuaToi.Migrations
                     b.HasIndex("MaHoiVien")
                         .IsUnique()
                         .HasFilter("[MaHoiVien] IS NOT NULL");
+
+                    b.HasIndex("TenDangNhap")
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("NguoiDungs");
                 });

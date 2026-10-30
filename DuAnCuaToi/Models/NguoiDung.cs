@@ -1,4 +1,7 @@
-﻿namespace DuAnCuaToi.Models
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace DuAnCuaToi.Models
 {
     public class NguoiDung
     {
@@ -16,6 +19,7 @@
 
         public string HoTen { get; set; } = string.Empty;
 
+        [StringLength(100)]
         public string TenDangNhap { get; set; } = string.Empty;
 
         public string MatKhauHash { get; set; } = string.Empty;
@@ -24,6 +28,7 @@
         public string VaiTro { get; set; } = "HoiVien";
 
         // Giữ để tương thích code cũ
+        [NotMapped]
         public string Role
         {
             get => VaiTro;
@@ -37,6 +42,8 @@
         public bool IsOnline { get; set; }
 
         public DateTime? LastLogin { get; set; }
+
+        public bool IsDeleted { get; set; } = false;
 
         //=========================
         // THÔNG TIN SỨC KHỎE HIỆN TẠI

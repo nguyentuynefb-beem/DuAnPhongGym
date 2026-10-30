@@ -1,4 +1,4 @@
-﻿using DuAnCuaToi.Models;
+using DuAnCuaToi.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace DuAnCuaToi.Data
@@ -71,12 +71,22 @@ namespace DuAnCuaToi.Data
             // 1. NGƯỜI DÙNG
             // =====================================================
 
+            // Tên đăng nhập là duy nhất cho các tài khoản đang hoạt động
+            modelBuilder.Entity<NguoiDung>()
+                .Property(x => x.TenDangNhap)
+                .HasMaxLength(100);
+
+            modelBuilder.Entity<NguoiDung>()
+                .HasIndex(x => x.TenDangNhap)
+                .IsUnique()
+                .HasFilter("[IsDeleted] = 0");
+
             // Mã hội viên là duy nhất.
             // Cho phép NULL đối với Admin/PT/LeTan.
             modelBuilder.Entity<NguoiDung>()
-    .HasIndex(x => x.MaHoiVien)
-    .IsUnique()
-    .HasFilter("[MaHoiVien] IS NOT NULL");
+                .HasIndex(x => x.MaHoiVien)
+                .IsUnique()
+                .HasFilter("[MaHoiVien] IS NOT NULL");
 
             // =====================================================
             // 2. GÓI TẬP <-> DỊCH VỤ

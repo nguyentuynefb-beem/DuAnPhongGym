@@ -1,4 +1,4 @@
-﻿@model List<DuAnCuaToi.Models.DangKyGoiTap>
+@model List<DuAnCuaToi.Models.DangKyGoiTap>
 
 @{
     Layout = null;
@@ -565,25 +565,101 @@
                             </div>
 
 
-                            <a asp-controller="User"
-                               asp-action="ThanhToanGoiTap"
-                               asp-route-id="@hd.Id"
-                               class="inline-flex
-                                      items-center
-                                      justify-center
-                                      gap-2
-                                      px-5 py-3
-                                      rounded-xl
-                                      bg-orange-500
-                                      hover:bg-orange-400
-                                      font-bold
-                                      transition">
+                            <div class="flex flex-col
+                                        sm:flex-row
+                                        items-stretch
+                                        sm:items-center
+                                        gap-3">
 
-                                <i class="fa-solid fa-building-columns"></i>
+                                <a asp-controller="User"
+                                   asp-action="ThanhToanGoiTap"
+                                   asp-route-id="@hd.Id"
+                                   class="inline-flex
+                                          items-center
+                                          justify-center
+                                          gap-2
+                                          px-5 py-3
+                                          rounded-xl
+                                          bg-orange-500
+                                          hover:bg-orange-400
+                                          text-white
+                                          font-bold
+                                          transition">
 
-                                Thanh toán chuyển khoản
+                                    <i class="fa-solid fa-building-columns"></i>
 
-                            </a>
+                                    @if (hd.TrangThai == "Chờ xác nhận")
+                                    {
+                                        <span>Xem thanh toán</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Thanh toán</span>
+                                    }
+
+                                </a>
+
+                                @if (hd.TrangThai == "Chưa thanh toán")
+                                {
+                                    <form asp-controller="User"
+                                          asp-action="HuyDangKyChoThanhToan"
+                                          method="post">
+
+                                        @Html.AntiForgeryToken()
+
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@hd.Id" />
+
+                                        <button type="submit"
+                                                onclick="return confirm('Bạn chắc chắn muốn hủy đăng ký gói tập này? Đơn chờ thanh toán sẽ bị xóa.');"
+                                                class="w-full
+                                                       inline-flex
+                                                       items-center
+                                                       justify-center
+                                                       gap-2
+                                                       px-5 py-3
+                                                       rounded-xl
+                                                       border
+                                                       border-red-500/30
+                                                       bg-red-500/10
+                                                       hover:bg-red-500
+                                                       text-red-400
+                                                       hover:text-white
+                                                       font-bold
+                                                       transition">
+
+                                            <i class="fa-solid fa-trash-can"></i>
+
+                                            Hủy đơn
+
+                                        </button>
+
+                                    </form>
+                                }
+                                else if (hd.TrangThai == "Chờ xác nhận")
+                                {
+                                    <div class="inline-flex
+                                                items-center
+                                                justify-center
+                                                gap-2
+                                                px-4 py-3
+                                                rounded-xl
+                                                border
+                                                border-blue-500/20
+                                                bg-blue-500/10
+                                                text-blue-300
+                                                text-sm
+                                                font-semibold">
+
+                                        <i class="fa-solid fa-clock"></i>
+
+                                        Chờ xác nhận
+
+                                    </div>
+                                }
+
+                            </div>
 
                         </div>
 

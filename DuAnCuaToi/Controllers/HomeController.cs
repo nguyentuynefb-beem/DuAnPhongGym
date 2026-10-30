@@ -1,6 +1,10 @@
 using DuAnCuaToi.Data;
 using DuAnCuaToi.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace DuAnCuaToi.Controllers
 {
@@ -23,11 +27,20 @@ namespace DuAnCuaToi.Controllers
         }
 
         // =========================================================
+        // TRANG CHÍNH SÁCH BẢO MẬT
+        // =========================================================
+        [HttpGet]
+        public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        // =========================================================
         // XỬ LÝ ĐĂNG NHẬP
         // =========================================================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Login(LoginViewModel model)
+        public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -36,9 +49,9 @@ namespace DuAnCuaToi.Controllers
 
             var username = model.Username.Trim();
 
-            // Tìm tài khoản theo tên đăng nhập.
-            var user = _context.NguoiDungs
-                .FirstOrDefault(u => u.TenDangNhap == username);
+            // Tìm tài khoản theo tên đăng nhập (chỉ tài khoản chưa bị xóa).
+            var user = await _context.NguoiDungs
+                .FirstOrDefaultAsync(u => u.TenDangNhap == username && !u.IsDeleted);
 
             // BCrypt.Verify sẽ ném lỗi nếu dữ liệu legacy từng lưu mật khẩu thô
             // trong cột MatKhauHash. Coi hash sai định dạng là đăng nhập thất bại.
@@ -71,34 +84,43 @@ namespace DuAnCuaToi.Controllers
             user.IsOnline = true;
             user.LastLogin = DateTime.Now;
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             // =====================================================
-            // LƯU THÔNG TIN NGƯỜI DÙNG VÀO SESSION
-            //
-            // QUAN TRỌNG:
-            // UserId đang được lưu bằng SetString()
-            // => UserController cũng phải dùng GetString()
+            // DUAL-MODE 1: LƯU THÔNG TIN VÀO SESSION
+            // Để tương thích 100% với các View Razor đang dùng Context.Session
             // =====================================================
-            HttpContext.Session.SetString(
-                "UserId",
-                user.Id.ToString()
-            );
+            HttpContext.Session.SetString("UserId", user.Id.ToString());
+            HttpContext.Session.SetString("Role", user.VaiTro ?? "");
+            HttpContext.Session.SetString("UserName", user.HoTen ?? "");
+            HttpContext.Session.SetString("Username", user.TenDangNhap ?? "");
 
-            HttpContext.Session.SetString(
-                "Role",
-                user.VaiTro ?? ""
-            );
+            // =====================================================
+            // DUAL-MODE 2: COOKIE AUTHENTICATION CHUẨN ASP.NET CORE
+            // Giữ phiên đăng nhập an toàn, bền bỉ qua cookie
+            // =====================================================
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.TenDangNhap),
+                new Claim("FullName", user.HoTen ?? ""),
+                new Claim(ClaimTypes.Role, user.VaiTro ?? "")
+            };
 
-            HttpContext.Session.SetString(
-                "UserName",
-                user.HoTen ?? ""
-            );
+            var claimsIdentity = new ClaimsIdentity(
+                claims,
+                CookieAuthenticationDefaults.AuthenticationScheme);
 
-            HttpContext.Session.SetString(
-                "Username",
-                user.TenDangNhap ?? ""
-            );
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = true,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+            };
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(claimsIdentity),
+                authProperties);
 
             // =====================================================
             // CHUYỂN TRANG THEO VAI TRÒ
@@ -132,8 +154,9 @@ namespace DuAnCuaToi.Controllers
 
                 default:
                     user.IsOnline = false;
-                    _context.SaveChanges();
+                    await _context.SaveChangesAsync();
                     HttpContext.Session.Clear();
+                    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     ModelState.AddModelError("", "Tài khoản có vai trò không hợp lệ. Vui lòng liên hệ quản trị viên.");
                     return View("Index", model);
             }
@@ -143,7 +166,7 @@ namespace DuAnCuaToi.Controllers
         // ĐĂNG XUẤT
         // =========================================================
         [HttpGet]
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
             // Lấy UserId từ Session
             var userIdString = HttpContext.Session.GetString("UserId");
@@ -152,19 +175,18 @@ namespace DuAnCuaToi.Controllers
             if (!string.IsNullOrEmpty(userIdString) &&
                 int.TryParse(userIdString, out int userId))
             {
-                var user = _context.NguoiDungs
-                    .Find(userId);
+                var user = await _context.NguoiDungs.FindAsync(userId);
 
                 if (user != null)
                 {
                     user.IsOnline = false;
-
-                    _context.SaveChanges();
+                    await _context.SaveChangesAsync();
                 }
             }
 
-            // Xóa toàn bộ Session
+            // Xóa Session và thu hồi Cookie đăng nhập
             HttpContext.Session.Clear();
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
             // Quay về trang đăng nhập
             return RedirectToAction(
@@ -178,7 +200,7 @@ namespace DuAnCuaToi.Controllers
         // =========================================================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Register(
+        public async Task<IActionResult> Register(
             string username,
             string password,
             string fullName)
@@ -203,10 +225,10 @@ namespace DuAnCuaToi.Controllers
             fullName = fullName.Trim();
 
             // =====================================================
-            // KIỂM TRA TÊN ĐĂNG NHẬP ĐÃ TỒN TẠI CHƯA
+            // KIỂM TRA TÊN ĐĂNG NHẬP ĐÃ TỒN TẠI CHƯA (trên các tài khoản đang hoạt động)
             // =====================================================
-            bool exists = _context.NguoiDungs
-                .Any(u => u.TenDangNhap == username);
+            bool exists = await _context.NguoiDungs
+                .AnyAsync(u => u.TenDangNhap == username && !u.IsDeleted);
 
             if (exists)
             {
@@ -255,20 +277,16 @@ namespace DuAnCuaToi.Controllers
             // =====================================================
             _context.NguoiDungs.Add(newUser);
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             // =====================================================
             // SAU SaveChanges(), newUser.Id đã có giá trị
-            //
-            // Ví dụ:
-            // Id = 5
-            // => MaHoiVien = HV0005
             // =====================================================
             newUser.MaHoiVien =
                 $"HV{newUser.Id:0000}";
 
             // Lưu mã hội viên
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             // =====================================================
             // THÔNG BÁO ĐĂNG KÝ THÀNH CÔNG
