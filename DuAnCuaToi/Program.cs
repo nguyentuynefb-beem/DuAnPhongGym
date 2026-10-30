@@ -30,6 +30,7 @@ builder.Services.AddScoped<IReportExportService, ReportExportService>();
 QuestPDF.Settings.License = LicenseType.Community;
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddMemoryCache();
 builder.Services.AddDistributedMemoryCache();
 
 // Cấu hình Session (duy trì để tương thích giao diện Razor)
