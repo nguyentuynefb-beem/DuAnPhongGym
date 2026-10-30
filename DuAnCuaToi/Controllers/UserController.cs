@@ -4,6 +4,7 @@ using DuAnCuaToi.Services;
 using DuAnCuaToi.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using QRCoder;
 using static DuAnCuaToi.Models.AIChatRequest;
 
 namespace DuAnCuaToi.Controllers
@@ -1554,8 +1555,108 @@ namespace DuAnCuaToi.Controllers
                     nameof(GoiTapCuaToi));
             }
 
+            // =====================================================
+            // TẠO QR DEMO CHO HÓA ĐƠN
+            // =====================================================
+
+            string noiDungQr =
+                $"SMARTGYM-DEMO|" +
+                $"HOADON:{hoaDon.Id}|" +
+                $"HOIVIEN:{hoaDon.DangKyGoiTap?.NguoiDung?.MaHoiVien}|" +
+                $"GOI:{hoaDon.DangKyGoiTap?.GoiTap?.TenGoi}|" +
+                $"SOTIEN:{hoaDon.TongTien:0}";
+
+            using QRCodeGenerator qrGenerator = new();
+            using QRCodeData qrData = qrGenerator.CreateQrCode(
+                noiDungQr,
+                QRCodeGenerator.ECCLevel.Q);
+
+            PngByteQRCode qrCode = new(qrData);
+
+            ViewBag.QRCode = Convert.ToBase64String(
+                qrCode.GetGraphic(20));
+
+            ViewBag.QRContent = noiDungQr;
+
             return View(hoaDon);
         }
+
+        // =========================================================
+        // HỦY ĐĂNG KÝ ĐANG CHỜ THANH TOÁN
+        // =========================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult HuyDangKyChoThanhToan(int id)
+        {
+            var userIdStr = HttpContext.Session.GetString("UserId");
+
+            if (string.IsNullOrEmpty(userIdStr) ||
+                !int.TryParse(userIdStr, out int userId))
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            var hoaDon = _context.HoaDons
+                .Include(x => x.ThanhToans)
+                .Include(x => x.DangKyGoiTap)
+                    .ThenInclude(x => x!.GoiTap)
+                .FirstOrDefault(x =>
+                    x.Id == id &&
+                    x.DangKyGoiTap != null &&
+                    x.DangKyGoiTap.NguoiDungId == userId);
+
+            if (hoaDon == null ||
+                hoaDon.DangKyGoiTap == null)
+            {
+                TempData["Error"] =
+                    "Không tìm thấy đăng ký cần hủy.";
+
+                return RedirectToAction(
+                    nameof(GoiTapCuaToi));
+            }
+
+            if (hoaDon.TrangThai != "Chưa thanh toán")
+            {
+                TempData["Error"] =
+                    "Chỉ có thể hủy đơn đang ở trạng thái Chưa thanh toán.";
+
+                return RedirectToAction(
+                    nameof(GoiTapCuaToi));
+            }
+
+            if (hoaDon.ThanhToans.Any())
+            {
+                TempData["Error"] =
+                    "Đơn này đã phát sinh giao dịch nên không thể hủy.";
+
+                return RedirectToAction(
+                    nameof(GoiTapCuaToi));
+            }
+
+            var dangKy = hoaDon.DangKyGoiTap;
+            var tenGoi = dangKy.GoiTap?.TenGoi ?? "gói tập";
+
+            // Xóa hóa đơn trước, sau đó xóa đăng ký gói đang chờ.
+            _context.HoaDons.Remove(hoaDon);
+            _context.DangKyGoiTaps.Remove(dangKy);
+
+            _context.ThongBaos.Add(new ThongBao
+            {
+                NguoiNhanId = userId,
+                NoiDung = $"Bạn đã hủy đăng ký {tenGoi} đang chờ thanh toán.",
+                DaDoc = false,
+                NgayTao = DateTime.Now
+            });
+
+            _context.SaveChanges();
+
+            TempData["Success"] =
+                $"Đã hủy đăng ký {tenGoi}.";
+
+            return RedirectToAction(
+                nameof(GoiTapCuaToi));
+        }
+
         // =========================================================
         // HỘI VIÊN XÁC NHẬN ĐÃ CHUYỂN KHOẢN
         // =========================================================
