@@ -1,9 +1,10 @@
-﻿using DuAnCuaToi.Data;
+using DuAnCuaToi.Data;
 using DuAnCuaToi.Models;
 using DuAnCuaToi.Services;
 using DuAnCuaToi.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using QRCoder;
 using static DuAnCuaToi.Models.AIChatRequest;
 
@@ -31,17 +32,41 @@ namespace DuAnCuaToi.Controllers
         private readonly IGeminiService _geminiService;
         private readonly IHealthService _healthService;
         private readonly IAIContextBuilder _aiContextBuilder;
+        private readonly IMemoryCache _cache;
 
         public UserController(
             ApplicationDbContext context,
             IGeminiService geminiService,
             IHealthService healthService,
-            IAIContextBuilder aiContextBuilder)
+            IAIContextBuilder aiContextBuilder,
+            IMemoryCache cache)
         {
             _context = context;
             _geminiService = geminiService;
             _healthService = healthService;
             _aiContextBuilder = aiContextBuilder;
+            _cache = cache;
+        }
+
+        // =========================================================
+        // KIỂM TRA GIỚI HẠN TẦN SUẤT GỌI AI (RATE LIMITING CHỐNG SPAM)
+        // =========================================================
+        private bool CheckRateLimit(string actionKey, int userId, int maxRequests, TimeSpan window)
+        {
+            var cacheKey = $"RateLimit_{actionKey}_{userId}";
+            var currentCount = _cache.GetOrCreate(cacheKey, entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = window;
+                return 0;
+            });
+
+            if (currentCount >= maxRequests)
+            {
+                return false;
+            }
+
+            _cache.Set(cacheKey, currentCount + 1, window);
+            return true;
         }
 
         // =====================================================
@@ -1120,6 +1145,15 @@ namespace DuAnCuaToi.Controllers
                 });
             }
 
+            if (!CheckRateLimit("AiTomTatInBody", userId.Value, maxRequests: 10, window: TimeSpan.FromDays(1)))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Bạn đã sử dụng hết 10 lượt tóm tắt InBody trong ngày hôm nay. Hãy duy trì tập luyện và quay lại vào ngày mai nhé! 📊"
+                });
+            }
+
             try
             {
                 // =====================================================
@@ -1188,6 +1222,15 @@ namespace DuAnCuaToi.Controllers
                 {
                     success = false,
                     message = "Phiên đăng nhập đã hết. Vui lòng đăng nhập lại."
+                });
+            }
+
+            if (!CheckRateLimit("AiSinhLich", userId.Value, maxRequests: 5, window: TimeSpan.FromDays(1)))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Bạn đã đạt giới hạn 5 lần sinh lịch tập trong ngày. Hãy kiên trì thực hiện lịch tập hiện tại nhé! 🎯"
                 });
             }
 
@@ -1326,6 +1369,19 @@ namespace DuAnCuaToi.Controllers
                     success = false,
                     message =
                         "Câu hỏi không được vượt quá 600 ký tự."
+                });
+            }
+
+            // =====================================================
+            // GIỚI HẠN TẦN SUẤT (RATE LIMITING: 20 LƯỢT / GIỜ)
+            // =====================================================
+            if (!CheckRateLimit("AiChat", userId.Value, maxRequests: 20, window: TimeSpan.FromHours(1)))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message =
+                        "Bạn đã dùng hết 20 lượt hỏi nhanh trong giờ này. Hãy dành chút thời gian tập luyện và quay lại sau nhé! 💪"
                 });
             }
 
