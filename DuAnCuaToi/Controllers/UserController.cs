@@ -7,9 +7,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using QRCoder;
 using static DuAnCuaToi.Models.AIChatRequest;
+using DuAnCuaToi.Filters;
 
 namespace DuAnCuaToi.Controllers
 {
+    [SessionRole("HoiVien")]
     public class UserController : Controller
     {
         // =========================================================
@@ -73,6 +75,7 @@ namespace DuAnCuaToi.Controllers
         // SYNC: cập nhật NguoiDung từ ChiSoSucKhoe mới nhất
         // =====================================================
         [HttpPost]
+        [SessionRole("Admin", "AdminGym", "PT")]
         public async Task<IActionResult> SyncMember(int id)
         {
             var role = HttpContext.Session.GetString("Role") ?? "";
@@ -89,6 +92,7 @@ namespace DuAnCuaToi.Controllers
         // SYNC ALL: cập nhật toàn bộ hội viên từ bản ghi mới nhất
         // =====================================================
         [HttpPost]
+        [SessionRole("Admin", "AdminGym")]
         public async Task<IActionResult> SyncAllMembers()
         {
             var role = HttpContext.Session.GetString("Role") ?? "";
@@ -254,6 +258,7 @@ namespace DuAnCuaToi.Controllers
             // =====================================================
 
             var danhSachGoi = _context.GoiTaps
+                .Where(x => !x.IsDeleted)
                 .Include(x => x.GoiTapDichVus)
                     .ThenInclude(x => x.DichVu)
                 .OrderBy(x => x.Gia)
@@ -317,12 +322,12 @@ namespace DuAnCuaToi.Controllers
             var goiTap = _context.GoiTaps
                 .Include(x => x.GoiTapDichVus)
                     .ThenInclude(x => x.DichVu)
-                .FirstOrDefault(x => x.Id == goiTapId);
+                .FirstOrDefault(x => x.Id == goiTapId && !x.IsDeleted);
 
             if (goiTap == null)
             {
                 TempData["Error"] =
-                    "Không tìm thấy gói tập.";
+                    "Gói tập không tồn tại hoặc đã ngừng cung cấp.";
 
                 return RedirectToAction(nameof(GoiTapCuaToi));
             }
@@ -343,6 +348,15 @@ namespace DuAnCuaToi.Controllers
 
             if (dangKyCho != null)
             {
+                var hoaDonCho = dangKyCho.HoaDons
+                    .FirstOrDefault(h => h.TrangThai == "Chưa thanh toán" || h.TrangThai == "Chờ xác nhận");
+
+                if (hoaDonCho != null)
+                {
+                    TempData["Success"] = $"Bạn đã có đơn đăng ký gói {goiTap.TenGoi} đang chờ thanh toán (Hóa đơn #{hoaDonCho.Id}).";
+                    return RedirectToAction(nameof(ThanhToanGoiTap), new { id = hoaDonCho.Id });
+                }
+
                 TempData["Error"] =
                     "Bạn đã có một đăng ký gói này đang chờ thanh toán.";
 
@@ -350,24 +364,34 @@ namespace DuAnCuaToi.Controllers
             }
 
             // =====================================================
-            // TẠO ĐĂNG KÝ
+            // TẠO ĐĂNG KÝ (TÍNH TOÁN NGÀY HẾT HẠN DỰ KIẾN CỘNG DỒN)
             // =====================================================
 
             var ngayDangKy = DateTime.Now;
+            DateTime ngayHetHanDuKien;
+
+            var goiDangConHan = _context.DangKyGoiTaps
+                .Where(x => x.NguoiDungId == userId &&
+                            x.TrangThai &&
+                            x.NgayHetHan > DateTime.Now)
+                .OrderByDescending(x => x.NgayHetHan)
+                .FirstOrDefault();
+
+            if (goiDangConHan != null)
+            {
+                ngayHetHanDuKien = goiDangConHan.NgayHetHan.AddDays(goiTap.ThoiHanNgay);
+            }
+            else
+            {
+                ngayHetHanDuKien = ngayDangKy.AddDays(goiTap.ThoiHanNgay);
+            }
 
             var dangKy = new DangKyGoiTap
             {
                 NguoiDungId = userId,
                 GoiTapId = goiTap.Id,
-
-                // Tạm đặt thời gian.
-                // Khi lễ tân xác nhận thanh toán,
-                // hệ thống sẽ tính lại từ thời điểm thanh toán.
                 NgayDangKy = ngayDangKy,
-
-                NgayHetHan =
-                    ngayDangKy.AddDays(goiTap.ThoiHanNgay),
-
+                NgayHetHan = ngayHetHanDuKien,
                 TrangThai = false
             };
 
@@ -414,6 +438,16 @@ namespace DuAnCuaToi.Controllers
             return RedirectToAction(
                 nameof(ThanhToanGoiTap),
                 new { id = hoaDon.Id });
+        }
+
+        // =========================================================
+        // GIA HẠN GÓI TẬP (POST /User/GiaHanGoiTap)
+        // =========================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult GiaHanGoiTap(int goiTapId)
+        {
+            return DangKyGoiTap(goiTapId);
         }
         // =========================================================
         // TRANG THANH TOÁN GÓI TẬP - CHỈ CHUYỂN KHOẢN
@@ -470,6 +504,18 @@ namespace DuAnCuaToi.Controllers
                 qrCode.GetGraphic(20));
 
             ViewBag.QRContent = noiDungQr;
+
+            // Kiểm tra xem hội viên có gói nào khác đang còn hạn hay không (để hiển thị thông tin gia hạn cộng dồn)
+            var goiDangConHan = _context.DangKyGoiTaps
+                .Include(x => x.GoiTap)
+                .Where(x => x.NguoiDungId == userId &&
+                            x.Id != hoaDon.DangKyGoiTapId &&
+                            x.TrangThai &&
+                            x.NgayHetHan > DateTime.Now)
+                .OrderByDescending(x => x.NgayHetHan)
+                .FirstOrDefault();
+
+            ViewBag.GoiDangConHan = goiDangConHan;
 
             return View(hoaDon);
         }
@@ -638,9 +684,78 @@ namespace DuAnCuaToi.Controllers
         }
 
         // =========================================================
-        // XÁC NHẬN ĐIỂM DANH
+        // TRANG QUÉT QR ĐIỂM DANH DÀNH CHO HỘI VIÊN (GET /User/CheckIn)
+        // =========================================================
+        [HttpGet]
+        public IActionResult CheckIn()
+        {
+            var userIdStr = HttpContext.Session.GetString("UserId");
+
+            if (string.IsNullOrEmpty(userIdStr) ||
+                !int.TryParse(userIdStr, out int userId))
+            {
+                // Chưa đăng nhập, lưu returnUrl để sau khi đăng nhập sẽ chuyển tiếp đến đây
+                return RedirectToAction("Index", "Home", new { returnUrl = Url.Action("CheckIn", "User") });
+            }
+
+            var currentUser = _context.NguoiDungs
+                .FirstOrDefault(u => u.Id == userId && !u.IsDeleted);
+
+            if (currentUser == null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            // 1. Gói tập đang hoạt động
+            var goiTapDangSuDung = _context.DangKyGoiTaps
+                .Include(x => x.GoiTap)
+                .Where(x =>
+                    x.NguoiDungId == userId &&
+                    x.TrangThai &&
+                    x.NgayHetHan >= DateTime.Now)
+                .OrderByDescending(x => x.NgayHetHan)
+                .FirstOrDefault();
+
+            // 2. Gói tập cũ (nếu không có gói hoạt động)
+            var goiTapCu = goiTapDangSuDung == null
+                ? _context.DangKyGoiTaps
+                    .Include(x => x.GoiTap)
+                    .Where(x => x.NguoiDungId == userId && x.TrangThai)
+                    .OrderByDescending(x => x.NgayHetHan)
+                    .FirstOrDefault()
+                : null;
+
+            // 3. Kiểm tra đã điểm danh hôm nay chưa
+            var batDauNgay = DateTime.Today;
+            var ketThucNgay = batDauNgay.AddDays(1);
+
+            var checkInHomNay = _context.CheckIns
+                .FirstOrDefault(x =>
+                    x.NguoiDungId == userId &&
+                    x.ThoiGian >= batDauNgay &&
+                    x.ThoiGian < ketThucNgay);
+
+            // 4. Lịch sử 5 lần điểm danh gần nhất
+            var lichSuDiemDanh = _context.CheckIns
+                .Where(x => x.NguoiDungId == userId)
+                .OrderByDescending(x => x.ThoiGian)
+                .Take(5)
+                .ToList();
+
+            ViewBag.CurrentUser = currentUser;
+            ViewBag.GoiTapDangSuDung = goiTapDangSuDung;
+            ViewBag.GoiTapCu = goiTapCu;
+            ViewBag.CheckInHomNay = checkInHomNay;
+            ViewBag.LichSuDiemDanh = lichSuDiemDanh;
+
+            return View();
+        }
+
+        // =========================================================
+        // XÁC NHẬN ĐIỂM DANH (POST /User/ConfirmCheckIn)
         // =========================================================
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult ConfirmCheckIn()
         {
             var userIdStr = HttpContext.Session.GetString("UserId");
@@ -655,7 +770,7 @@ namespace DuAnCuaToi.Controllers
             }
 
             var currentUser = _context.NguoiDungs
-                .FirstOrDefault(u => u.Id == userId);
+                .FirstOrDefault(u => u.Id == userId && !u.IsDeleted);
 
             if (currentUser == null)
             {
@@ -665,42 +780,55 @@ namespace DuAnCuaToi.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            // Kiểm tra gói tập
+            // Kiểm tra gói tập còn hiệu lực
             var goiTapDangSuDung = _context.DangKyGoiTaps
-                .FirstOrDefault(x =>
+                .Include(x => x.GoiTap)
+                .Where(x =>
                     x.NguoiDungId == userId &&
                     x.TrangThai &&
-                    x.NgayHetHan >= DateTime.Now);
+                    x.NgayHetHan >= DateTime.Now)
+                .OrderByDescending(x => x.NgayHetHan)
+                .FirstOrDefault();
 
             if (goiTapDangSuDung == null)
             {
-                TempData["Error"] =
-                    "Gói tập của bạn không còn hiệu lực.";
+                var goiCu = _context.DangKyGoiTaps
+                    .Include(x => x.GoiTap)
+                    .Where(x => x.NguoiDungId == userId && x.TrangThai)
+                    .OrderByDescending(x => x.NgayHetHan)
+                    .FirstOrDefault();
 
-                return RedirectToAction("Index");
+                if (goiCu != null)
+                {
+                    TempData["Error"] = $"Gói tập [{goiCu.GoiTap?.TenGoi}] của bạn đã hết hạn từ ngày {goiCu.NgayHetHan:dd/MM/yyyy}. Vui lòng gia hạn trước khi điểm danh!";
+                }
+                else
+                {
+                    TempData["Error"] = "Bạn chưa có gói tập nào còn hiệu lực. Vui lòng đăng ký gói tập để điểm danh vào phòng!";
+                }
+
+                return RedirectToAction(nameof(CheckIn));
             }
 
-            // Kiểm tra đã điểm danh hôm nay
+            // Kiểm tra đã điểm danh hôm nay chưa
             var batDauNgay = DateTime.Today;
             var ketThucNgay = batDauNgay.AddDays(1);
 
             var daCheckInHomNay = _context.CheckIns
-                .Any(x =>
+                .FirstOrDefault(x =>
                     x.NguoiDungId == userId &&
                     x.ThoiGian >= batDauNgay &&
                     x.ThoiGian < ketThucNgay);
 
-            if (daCheckInHomNay)
+            if (daCheckInHomNay != null)
             {
                 TempData["Error"] =
-                    "Bạn đã điểm danh hôm nay rồi.";
+                    $"Bạn đã điểm danh hôm nay rồi (lúc {daCheckInHomNay.ThoiGian:HH:mm}). Chúc bạn có buổi tập vui vẻ!";
 
-                return RedirectToAction("Index");
+                return RedirectToAction(nameof(CheckIn));
             }
 
-            // =====================================================
-            // TẠO BẢN GHI ĐIỂM DANH
-            // =====================================================
+            // Ghi nhận điểm danh
             var checkIn = new CheckIn
             {
                 NguoiDungId = userId,
@@ -710,14 +838,11 @@ namespace DuAnCuaToi.Controllers
 
             _context.CheckIns.Add(checkIn);
 
-            // =====================================================
-            // TẠO THÔNG BÁO CHO HỘI VIÊN
-            // =====================================================
             _context.ThongBaos.Add(new ThongBao
             {
                 NguoiNhanId = userId,
                 NoiDung =
-                    $"Bạn đã điểm danh thành công lúc {DateTime.Now:HH:mm - dd/MM/yyyy}.",
+                    $"Bạn đã điểm danh thành công lúc {DateTime.Now:HH:mm dd/MM/yyyy} qua mã QR. Gói [{goiTapDangSuDung.GoiTap?.TenGoi}] còn hạn đến {goiTapDangSuDung.NgayHetHan:dd/MM/yyyy}.",
                 DaDoc = false,
                 NgayTao = DateTime.Now
             });
@@ -725,9 +850,9 @@ namespace DuAnCuaToi.Controllers
             _context.SaveChanges();
 
             TempData["Success"] =
-                "Điểm danh thành công! Chúc bạn có buổi tập hiệu quả.";
+                $"Điểm danh thành công! Chào mừng bạn đến với SmartGym (Gói: {goiTapDangSuDung.GoiTap?.TenGoi}). Chúc bạn có buổi tập năng động!";
 
-            return RedirectToAction("Index");
+            return RedirectToAction(nameof(CheckIn));
         }
 
 
@@ -796,10 +921,50 @@ namespace DuAnCuaToi.Controllers
             user.HoTen = model.HoTen;
             user.TenDangNhap = model.TenDangNhap;
 
+            // Xử lý đổi mật khẩu an toàn
             if (!string.IsNullOrWhiteSpace(model.MatKhauMoi))
             {
-                user.MatKhauHash =
-                    BCrypt.Net.BCrypt.HashPassword(model.MatKhauMoi);
+                if (string.IsNullOrWhiteSpace(model.MatKhauHienTai))
+                {
+                    ModelState.AddModelError(nameof(model.MatKhauHienTai), "Vui lòng nhập mật khẩu hiện tại để xác thực đổi mật khẩu.");
+                    return View(model);
+                }
+
+                bool isOldPasswordCorrect = false;
+                try
+                {
+                    isOldPasswordCorrect = BCrypt.Net.BCrypt.Verify(model.MatKhauHienTai, user.MatKhauHash);
+                }
+                catch
+                {
+                    isOldPasswordCorrect = (model.MatKhauHienTai == user.MatKhauHash);
+                }
+
+                if (!isOldPasswordCorrect)
+                {
+                    ModelState.AddModelError(nameof(model.MatKhauHienTai), "Mật khẩu hiện tại không chính xác.");
+                    return View(model);
+                }
+
+                if (model.MatKhauMoi.Length < 6)
+                {
+                    ModelState.AddModelError(nameof(model.MatKhauMoi), "Mật khẩu mới phải có ít nhất 6 ký tự.");
+                    return View(model);
+                }
+
+                if (model.MatKhauMoi == model.MatKhauHienTai)
+                {
+                    ModelState.AddModelError(nameof(model.MatKhauMoi), "Mật khẩu mới không được trùng với mật khẩu hiện tại.");
+                    return View(model);
+                }
+
+                if (model.MatKhauMoi != model.XacNhanMatKhau)
+                {
+                    ModelState.AddModelError(nameof(model.XacNhanMatKhau), "Xác nhận mật khẩu mới không khớp.");
+                    return View(model);
+                }
+
+                user.MatKhauHash = BCrypt.Net.BCrypt.HashPassword(model.MatKhauMoi);
             }
 
             _context.SaveChanges();
@@ -813,60 +978,185 @@ namespace DuAnCuaToi.Controllers
                 user.HoTen);
 
             TempData["Success"] =
-                "Cập nhật thông tin thành công.";
+                "Cập nhật thông tin và mật khẩu thành công.";
 
             return RedirectToAction("Index");
         }
 
 
         // =========================================================
-        // ĐẶT LỊCH TẬP
+        // ĐĂNG KÝ LỊCH TẬP PHỤ TRÁCH (GET /User/DangKyLichTap)
         // =========================================================
-        [HttpPost]
-        public IActionResult DatLich(
-            int maPt,
-            DateTime ngayTap,
-            string khungGio,
-            string? ghiChu)
+        [HttpGet]
+        public IActionResult DangKyLichTap()
         {
-            var userIdStr = HttpContext.Session.GetString("UserId");
-
-            if (string.IsNullOrEmpty(userIdStr) ||
-                !int.TryParse(userIdStr, out int userId))
+            var userId = GetCurrentMemberId();
+            if (userId == null)
             {
                 return RedirectToAction("Index", "Home");
             }
 
+            ViewBag.DanhSachPT = _context.NguoiDungs
+                .Where(x => x.VaiTro == "PT" && !x.IsDeleted)
+                .OrderBy(x => x.HoTen)
+                .ToList();
+
+            return View();
+        }
+
+        // =========================================================
+        // ĐẶT LỊCH TẬP
+        // =========================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DatLich(
+            int maPt,
+            DateTime ngayTap,
+            string khungGio,
+            string? ghiChu,
+            string? noiDung)
+        {
+            string? moTa = !string.IsNullOrWhiteSpace(ghiChu) ? ghiChu : noiDung;
+            var userId = GetCurrentMemberId();
+
+            if (userId == null)
+            {
+                TempData["Error"] = "Vui lòng đăng nhập để thực hiện đặt lịch tập.";
+                return RedirectToAction("Index", "Home");
+            }
+
             var hoiVienHienTai = _context.NguoiDungs
-                .FirstOrDefault(x => x.Id == userId);
+                .FirstOrDefault(x => x.Id == userId.Value && !x.IsDeleted);
 
             if (hoiVienHienTai == null)
             {
                 return RedirectToAction("Index", "Home");
             }
 
+            // 1. Kiểm tra ngày tập không được trong quá khứ
+            if (ngayTap.Date < DateTime.Today)
+            {
+                TempData["Error"] = "Không thể đặt lịch tập cho ngày trong quá khứ. Vui lòng chọn từ ngày hôm nay trở đi.";
+                return RedirectToAction("Index");
+            }
+
+            // 2. Kiểm tra gói tập còn hạn và có quyền lợi PT/HLV
+            var goiTapHopLe = _context.DangKyGoiTaps
+                .Include(x => x.GoiTap)
+                    .ThenInclude(g => g!.GoiTapDichVus)
+                        .ThenInclude(gd => gd.DichVu)
+                .Where(x => x.NguoiDungId == userId.Value && x.TrangThai && x.NgayHetHan >= DateTime.Now)
+                .ToList();
+
+            if (!goiTapHopLe.Any())
+            {
+                TempData["Error"] = "Bạn chưa có gói tập nào còn hạn. Vui lòng đăng ký gói tập có quyền lợi HLV cá nhân (PT) để đặt lịch!";
+                return RedirectToAction(nameof(GoiTapCuaToi));
+            }
+
+            bool coQuyenLoiPT = goiTapHopLe.Any(dk =>
+            {
+                if (dk.GoiTap == null) return false;
+
+                var quyenLoi = (dk.GoiTap.QuyenLoi ?? "").ToLower();
+                var tenGoi = (dk.GoiTap.TenGoi ?? "").ToLower();
+
+                if (quyenLoi.Contains("pt") || quyenLoi.Contains("huấn luyện viên") || quyenLoi.Contains("hlv") ||
+                    quyenLoi.Contains("personal trainer") || quyenLoi.Contains("kèm riêng") ||
+                    tenGoi.Contains("pt") || tenGoi.Contains("huấn luyện viên") || tenGoi.Contains("hlv") ||
+                    tenGoi.Contains("personal trainer") || tenGoi.Contains("kèm riêng"))
+                {
+                    return true;
+                }
+
+                if (dk.GoiTap.GoiTapDichVus != null)
+                {
+                    foreach (var gtdv in dk.GoiTap.GoiTapDichVus)
+                    {
+                        var tenDv = (gtdv.DichVu?.TenDichVu ?? "").ToLower();
+                        if (tenDv.Contains("pt") || tenDv.Contains("huấn luyện viên") || tenDv.Contains("hlv") || tenDv.Contains("kèm riêng"))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            });
+
+            if (!coQuyenLoiPT)
+            {
+                TempData["Error"] = "Gói tập hiện tại của bạn không bao gồm quyền lợi Huấn luyện viên cá nhân (PT). Vui lòng nâng cấp hoặc mua gói tập có dịch vụ PT để đặt lịch!";
+                return RedirectToAction(nameof(GoiTapCuaToi));
+            }
+
+            // 3. Kiểm tra PT tồn tại
             var pt = _context.NguoiDungs
-                .FirstOrDefault(x =>
-                    x.Id == maPt &&
-                    x.VaiTro == "PT");
+                .FirstOrDefault(x => x.Id == maPt && x.VaiTro == "PT" && !x.IsDeleted);
 
             if (pt == null)
             {
-                TempData["Error"] =
-                    "Không tìm thấy PT.";
-
+                TempData["Error"] = "Không tìm thấy Huấn luyện viên đã chọn hoặc HLV không còn hoạt động.";
                 return RedirectToAction("Index");
+            }
+
+            // 4. Kiểm tra PT đã có lịch trong khung giờ này chưa (ChoDuyet hoặc DaDuyet)
+            bool ptBiTrungLich = _context.LichTaps.Any(l =>
+                (l.MaPT == maPt || l.PTUsername == pt.TenDangNhap) &&
+                l.NgayTap.Date == ngayTap.Date &&
+                l.KhungGio == khungGio &&
+                (l.TrangThai == "ChoDuyet" || l.TrangThai == "DaDuyet"));
+
+            if (ptBiTrungLich)
+            {
+                TempData["Error"] = $"HLV {pt.HoTen} đã có lịch hẹn vào khung giờ {khungGio} ngày {ngayTap:dd/MM/yyyy}. Vui lòng chọn khung giờ hoặc HLV khác!";
+                return RedirectToAction("Index");
+            }
+
+            // 5. Kiểm tra Hội viên đã có lịch trong khung giờ này chưa
+            bool hoiVienBiTrungLich = _context.LichTaps.Any(l =>
+                l.HoiVienId == userId.Value &&
+                l.NgayTap.Date == ngayTap.Date &&
+                l.KhungGio == khungGio &&
+                (l.TrangThai == "ChoDuyet" || l.TrangThai == "DaDuyet"));
+
+            if (hoiVienBiTrungLich)
+            {
+                TempData["Error"] = $"Bạn đã có lịch tập vào khung giờ {khungGio} ngày {ngayTap:dd/MM/yyyy}. Vui lòng kiểm tra lại trong 'Lịch tập của tôi'!";
+                return RedirectToAction(nameof(LichTapCuaToi));
+            }
+
+            // 6. Tính thời gian bắt đầu & kết thúc từ khung giờ
+            DateTime thoiGianBatDau = ngayTap.Date;
+            DateTime thoiGianKetThuc = ngayTap.Date;
+            if (!string.IsNullOrWhiteSpace(khungGio) && khungGio.Contains('-'))
+            {
+                var parts = khungGio.Split('-');
+                if (parts.Length == 2)
+                {
+                    if (TimeSpan.TryParse(parts[0].Trim(), out TimeSpan tBatDau))
+                    {
+                        thoiGianBatDau = ngayTap.Date.Add(tBatDau);
+                    }
+                    if (TimeSpan.TryParse(parts[1].Trim(), out TimeSpan tKetThuc))
+                    {
+                        thoiGianKetThuc = ngayTap.Date.Add(tKetThuc);
+                    }
+                }
             }
 
             var lichTapMoi = new LichTap
             {
-                MaHoiVien = hoiVienHienTai.Id,
+                HoiVienId = hoiVienHienTai.Id,
                 MaPT = maPt,
                 PTUsername = pt.TenDangNhap,
-                NgayTap = ngayTap,
+                NgayTap = ngayTap.Date,
+                ThoiGianBatDau = thoiGianBatDau,
+                ThoiGianKetThuc = thoiGianKetThuc,
                 KhungGio = khungGio,
-                GhiChu = ghiChu,
+                NoiDung = moTa,
                 TrangThai = "ChoDuyet",
+                DaDiemDanh = false,
                 NgayTao = DateTime.Now
             };
 
@@ -876,18 +1166,82 @@ namespace DuAnCuaToi.Controllers
             _context.ThongBaos.Add(new ThongBao
             {
                 NguoiNhanId = maPt,
-                NoiDung =
-                    $"{hoiVienHienTai.HoTen} vừa gửi yêu cầu đặt lịch.",
+                NoiDung = $"Hội viên {hoiVienHienTai.HoTen} vừa đặt lịch tập ngày {ngayTap:dd/MM/yyyy} khung giờ {khungGio}. Vui lòng xác nhận.",
+                DaDoc = false,
+                NgayTao = DateTime.Now
+            });
+
+            // Thông báo cho Hội viên
+            _context.ThongBaos.Add(new ThongBao
+            {
+                NguoiNhanId = userId.Value,
+                NoiDung = $"Bạn đã gửi yêu cầu đặt lịch tập với HLV {pt.HoTen} vào ngày {ngayTap:dd/MM/yyyy} khung giờ {khungGio}. Trạng thái: Chờ duyệt.",
                 DaDoc = false,
                 NgayTao = DateTime.Now
             });
 
             _context.SaveChanges();
 
-            TempData["Success"] =
-                "Yêu cầu đăng ký lịch tập đã được gửi!";
+            TempData["Success"] = $"Yêu cầu đăng ký lịch tập với HLV {pt.HoTen} vào ngày {ngayTap:dd/MM/yyyy} ({khungGio}) đã được gửi thành công!";
 
-            return RedirectToAction("Index");
+            return RedirectToAction(nameof(LichTapCuaToi));
+        }
+
+        // =========================================================
+        // HỦY LỊCH TẬP (POST /User/HuyLichTap)
+        // =========================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult HuyLichTap(int id)
+        {
+            var userId = GetCurrentMemberId();
+
+            if (userId == null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            var lich = _context.LichTaps
+                .Include(x => x.PT)
+                .FirstOrDefault(x => x.Id == id && x.HoiVienId == userId.Value);
+
+            if (lich == null)
+            {
+                TempData["Error"] = "Không tìm thấy lịch tập cần hủy.";
+                return RedirectToAction(nameof(LichTapCuaToi));
+            }
+
+            if (lich.TrangThai != "ChoDuyet" && lich.TrangThai != "DaDuyet")
+            {
+                TempData["Error"] = "Chỉ có thể hủy những lịch tập đang ở trạng thái 'Chờ duyệt' hoặc 'Đã duyệt'.";
+                return RedirectToAction(nameof(LichTapCuaToi));
+            }
+
+            if (lich.DaDiemDanh)
+            {
+                TempData["Error"] = "Buổi tập này đã được điểm danh hoàn thành, không thể hủy.";
+                return RedirectToAction(nameof(LichTapCuaToi));
+            }
+
+            lich.TrangThai = "DaHuy";
+
+            // Gửi thông báo cho PT nếu có
+            if (lich.MaPT.HasValue)
+            {
+                var hoiVien = _context.NguoiDungs.Find(userId.Value);
+                _context.ThongBaos.Add(new ThongBao
+                {
+                    NguoiNhanId = lich.MaPT.Value,
+                    NoiDung = $"Hội viên {hoiVien?.HoTen ?? "Hội viên"} đã hủy lịch tập ngày {lich.NgayTap:dd/MM/yyyy} khung giờ {lich.KhungGio}.",
+                    DaDoc = false,
+                    NgayTao = DateTime.Now
+                });
+            }
+
+            _context.SaveChanges();
+
+            TempData["Success"] = $"Đã hủy lịch tập ngày {lich.NgayTap:dd/MM/yyyy} thành công.";
+            return RedirectToAction(nameof(LichTapCuaToi));
         }
         // =========================================================
         // LỊCH TẬP CỦA TÔI
@@ -951,6 +1305,10 @@ namespace DuAnCuaToi.Controllers
             ViewBag.SoLichTuChoi =
                 lichTaps.Count(x =>
                     x.TrangThai == "TuChoi");
+
+            ViewBag.SoLichDaHuy =
+                lichTaps.Count(x =>
+                    x.TrangThai == "DaHuy");
 
             return View(lichTaps);
         }
@@ -1373,6 +1731,19 @@ namespace DuAnCuaToi.Controllers
             }
 
             // =====================================================
+            // GUARDRAIL LỚP 1: BẢO VỆ PHÂN QUYỀN HỆ THỐNG
+            // Chặn hội viên hỏi các thông tin nội bộ / doanh thu / tài khoản
+            // =====================================================
+            if (IsRestrictedSystemQueryForMember(question))
+            {
+                return Json(new
+                {
+                    success = true,
+                    data = "Dạ, thông tin về doanh thu, số lượng tài khoản hoặc dữ liệu quản trị nội bộ thuộc phạm vi bảo mật của Ban Quản Trị SmartGym nên tôi không có quyền chia sẻ ạ. Tôi luôn sẵn sàng hỗ trợ bạn về lịch tập, bài tập, dinh dưỡng hoặc các dịch vụ hội viên nhé! 💪"
+                });
+            }
+
+            // =====================================================
             // GIỚI HẠN TẦN SUẤT (RATE LIMITING: 20 LƯỢT / GIỜ)
             // =====================================================
             if (!CheckRateLimit("AiChat", userId.Value, maxRequests: 20, window: TimeSpan.FromHours(1)))
@@ -1553,7 +1924,12 @@ namespace DuAnCuaToi.Controllers
             {
                 NgayDo = x.NgayDo,
                 ChieuCao = x.ChieuCao,
-                CanNang = x.CanNang
+                CanNang = x.CanNang,
+                VongNguc = x.VongNguc,
+                VongEo = x.VongEo,
+                VongHong = x.VongHong,
+                TinhTrangSucKhoe = x.TinhTrangSucKhoe,
+                BenhLy = x.BenhLy
             }).ToList();
 
             return View(model);
@@ -1627,12 +2003,87 @@ namespace DuAnCuaToi.Controllers
                 x.NgayDo,
                 x.ChieuCao,
                 x.CanNang,
-                BMI = (x.ChieuCao.HasValue && x.CanNang.HasValue && x.ChieuCao > 0)
-                    ? Math.Round(x.CanNang.Value / Math.Pow(x.ChieuCao.Value / 100.0, 2), 1)
-                    : 0
+                BMI = x.BMI,
+                DanhGiaBMI = x.DanhGiaBMI,
+                x.VongNguc,
+                x.VongEo,
+                x.VongHong,
+                TyLeEoHong = x.TyLeEoHong,
+                x.TinhTrangSucKhoe,
+                x.BenhLy
             }).ToList();
 
             return Json(new { success = true, data = history });
         }
+
+        // =========================================================
+        // PHÂN QUYỀN AI: PHÁT HIỆN CÂU HỎI NHẠY CẢM CỦA HỘI VIÊN
+        // =========================================================
+        private static bool IsRestrictedSystemQueryForMember(string question)
+        {
+            if (string.IsNullOrWhiteSpace(question)) return false;
+
+            var normalized = question.ToLowerInvariant();
+            var unaccented = RemoveVietnameseDiacritics(normalized);
+
+            // Các cụm từ nhạy cảm liên quan đến Doanh thu & Tài chính
+            string[] financialKeywords =
+            {
+                "doanh thu", "doanh so", "loi nhuan", "tong thu", "thu nhap", "kiem duoc bao nhieu",
+                "thu ve bao nhieu", "tien lai", "doanh thu thang", "doanh thu nam", "bao cao tai chinh",
+                "so du ngan hang", "so tai khoan ngan hang", "tai khoan ngan hang"
+            };
+
+            // Các cụm từ nhạy cảm liên quan đến Thống kê tài khoản, dữ liệu người dùng & Nhân sự
+            string[] systemUserKeywords =
+            {
+                "bao nhieu tai khoan", "so tai khoan trong he thong", "tong so tai khoan", "co bao nhieu user",
+                "tong so user", "danh sach tai khoan", "danh sach hoi vien", "danh sach nguoi dung",
+                "danh sach user", "danh sach khach hang", "danh sach nhan vien", "thong tin nguoi dung",
+                "thong tin khach hang", "all user", "danh sach pt", "luong pt", "luong huan luyen vien",
+                "luong le tan", "luong nhan vien", "chi phi van hanh"
+            };
+
+            // Các cụm từ nhạy cảm liên quan đến Kỹ thuật, CSDL, Mật khẩu
+            string[] securityKeywords =
+            {
+                "co so du lieu", "database", "sql server", "mat khau", "password", "hash password",
+                "mat khau admin", "password admin", "table nguoidung", "bang nguoidung", "chuoi ket noi",
+                "connection string", "api key", "system prompt"
+            };
+
+            foreach (var kw in financialKeywords.Concat(systemUserKeywords).Concat(securityKeywords))
+            {
+                if (unaccented.Contains(kw) || normalized.Contains(kw))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string RemoveVietnameseDiacritics(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+            var normalizedString = text.Normalize(System.Text.NormalizationForm.FormD);
+            var stringBuilder = new System.Text.StringBuilder(capacity: normalizedString.Length);
+
+            for (int i = 0; i < normalizedString.Length; i++)
+            {
+                char c = normalizedString[i];
+                var unicodeCategory = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != System.Globalization.UnicodeCategory.NonSpacingMark)
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+
+            return stringBuilder
+                .ToString()
+                .Normalize(System.Text.NormalizationForm.FormC)
+                .Replace("đ", "d")
+                .Replace("Đ", "d");
         }
     }
+}

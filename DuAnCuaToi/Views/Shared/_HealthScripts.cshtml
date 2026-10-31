@@ -3,17 +3,122 @@
     document.addEventListener('DOMContentLoaded', function () {
         const form = document.getElementById('healthForm');
         const chartCanvas = document.getElementById('healthChart');
+        const inputHeight = document.getElementById('inputChieuCao');
+        const inputWeight = document.getElementById('inputCanNang');
+        const inputWaist = document.getElementById('inputVongEo');
+        const inputHip = document.getElementById('inputVongHong');
         let healthChart = null;
 
-        function computeRating(bmi) {
-            if (!bmi || bmi === 0) return '';
-            if (bmi < 18.5) return 'Thiếu cân';
-            if (bmi < 23) return 'Bình thường';
-            if (bmi < 25) return 'Thừa cân';
-            if (bmi < 30) return 'Béo phì độ I';
-            return 'Béo phì';
+        // =========================================================
+        // 1. TÍNH TOÁN REALTIME KHI NGƯỜI DÙNG NHẬP LIỆU
+        // =========================================================
+        function computeBMIRating(bmi) {
+            if (!bmi || bmi <= 0) return 'Chưa xác định';
+            if (bmi < 18.5) return 'Thiếu cân (Gầy)';
+            if (bmi < 23.0) return 'Bình thường (Cân đối)';
+            if (bmi < 25.0) return 'Tiền béo phì (Thừa cân)';
+            if (bmi < 30.0) return 'Béo phì độ I';
+            return 'Béo phì độ II (Nguy hiểm)';
         }
 
+        function computeWHRRating(whr) {
+            if (!whr || whr <= 0) return 'Chưa đủ dữ liệu';
+            if (whr <= 0.85) return 'Mức an toàn (Cân đối)';
+            if (whr <= 0.90) return 'Mức trung bình';
+            return 'Nguy cơ cao (Tích mỡ nội tạng)';
+        }
+
+        function updateRealtimeCalculations() {
+            const h = parseFloat(inputHeight?.value) || 0;
+            const w = parseFloat(inputWeight?.value) || 0;
+            const waist = parseFloat(inputWaist?.value) || 0;
+            const hip = parseFloat(inputHip?.value) || 0;
+
+            // 1. BMI & Rating
+            const bmiEl = document.getElementById('currentBmi');
+            const bmiRatingEl = document.getElementById('bmiRating');
+            if (h > 0 && w > 0) {
+                const bmi = (w / Math.pow(h / 100.0, 2));
+                const bmiRounded = bmi.toFixed(1);
+                if (bmiEl) bmiEl.innerText = bmiRounded;
+                if (bmiRatingEl) bmiRatingEl.innerText = computeBMIRating(bmi);
+            } else {
+                if (bmiEl && !bmiEl.innerText.trim()) bmiEl.innerText = '--';
+            }
+
+            // 2. Cân nặng lý tưởng & Gợi ý (Chuẩn BMI Châu Á 18.5 - 22.9)
+            const idealRangeEl = document.getElementById('idealWeightRange');
+            const weightAdviceEl = document.getElementById('weightAdvice');
+            if (h > 0) {
+                const minW = (18.5 * Math.pow(h / 100.0, 2)).toFixed(1);
+                const maxW = (22.9 * Math.pow(h / 100.0, 2)).toFixed(1);
+                if (idealRangeEl) idealRangeEl.innerText = `${minW} - ${maxW} kg`;
+
+                if (w > 0 && weightAdviceEl) {
+                    if (w < minW) {
+                        const diff = (minW - w).toFixed(1);
+                        weightAdviceEl.innerText = `Nên tăng khoảng ${diff} kg để đạt thể trạng lý tưởng.`;
+                    } else if (w > maxW) {
+                        const diff = (w - maxW).toFixed(1);
+                        weightAdviceEl.innerText = `Nên giảm khoảng ${diff} kg để đạt thể trạng lý tưởng.`;
+                    } else {
+                        weightAdviceEl.innerText = `Cân nặng của bạn đang ở mức lý tưởng, hãy tiếp tục duy trì!`;
+                    }
+                }
+            }
+
+            // 3. WHR (Eo / Hông)
+            const whrEl = document.getElementById('currentWhr');
+            const whrRatingEl = document.getElementById('whrRating');
+            if (waist > 0 && hip > 0) {
+                const whr = (waist / hip).toFixed(2);
+                if (whrEl) whrEl.innerText = whr;
+                if (whrRatingEl) whrRatingEl.innerText = computeWHRRating(parseFloat(whr));
+            }
+
+            // 4. BMR & TDEE (Ước tính calo/ngày)
+            const bmrEl = document.getElementById('currentBmr');
+            const tdeeEl = document.getElementById('currentTdee');
+            if (h > 0 && w > 0) {
+                const bmr = Math.round((10 * w) + (6.25 * h) - (5 * 25) + 5);
+                const tdee = Math.round(bmr * 1.55);
+                if (bmrEl) bmrEl.innerText = bmr.toLocaleString('vi-VN');
+                if (tdeeEl) tdeeEl.innerText = tdee.toLocaleString('vi-VN');
+            }
+        }
+
+        [inputHeight, inputWeight, inputWaist, inputHip].forEach(el => {
+            if (el) {
+                el.addEventListener('input', updateRealtimeCalculations);
+            }
+        });
+
+        // =========================================================
+        // 2. TOAST THÔNG BÁO
+        // =========================================================
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('hpToast');
+            const msgEl = document.getElementById('hpToastMessage');
+            if (!toast || !msgEl) return;
+
+            msgEl.innerText = message;
+            if (isError) {
+                toast.style.borderColor = '#ef4444';
+                toast.querySelector('i').className = 'fa-solid fa-triangle-exclamation text-rose-400 text-lg';
+            } else {
+                toast.style.borderColor = '#10b981';
+                toast.querySelector('i').className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            }
+
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3500);
+        }
+
+        // =========================================================
+        // 3. TẢI LỊCH SỬ & CẬP NHẬT BIỂU ĐỒ + BẢNG
+        // =========================================================
         async function loadHistory(take = 20) {
             try {
                 const url = '@Url.Action("HealthHistory","User")' + '?take=' + take;
@@ -23,73 +128,132 @@
                 if (!json.success) return;
 
                 const data = json.data || [];
-
                 const items = data.slice().reverse();
 
-                const labels = items.map(d => new Date(d.NgayDo).toLocaleDateString());
-                const weights = items.map(d => d.CanNang ?? 0);
-                const bmis = items.map(d => d.BMI ?? 0);
+                const labels = items.map(d => new Date(d.ngayDo || d.NgayDo).toLocaleDateString('vi-VN'));
+                const weights = items.map(d => (d.canNang ?? d.CanNang ?? 0));
+                const bmis = items.map(d => (d.bmi ?? d.BMI ?? 0));
 
-                if (healthChart) {
-                    healthChart.data.labels = labels;
-                    healthChart.data.datasets[0].data = weights;
-                    healthChart.data.datasets[1].data = bmis;
-                    healthChart.update();
-                } else {
-                    healthChart = new Chart(chartCanvas.getContext('2d'), {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [
-                                {
-                                    label: 'Cân nặng (kg)',
-                                    data: weights,
-                                    borderColor: '#28a745',
-                                    backgroundColor: 'rgba(40,167,69,0.1)',
-                                    yAxisID: 'y',
-                                    tension: 0.2,
-                                    fill: true
+                // 3.1 Vẽ/Cập nhật Chart
+                if (chartCanvas) {
+                    if (healthChart) {
+                        healthChart.data.labels = labels;
+                        healthChart.data.datasets[0].data = weights;
+                        healthChart.data.datasets[1].data = bmis;
+                        healthChart.update();
+                    } else {
+                        healthChart = new Chart(chartCanvas.getContext('2d'), {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: [
+                                    {
+                                        label: 'Cân nặng (kg)',
+                                        data: weights,
+                                        borderColor: '#10b981',
+                                        backgroundColor: 'rgba(16,185,129,0.12)',
+                                        yAxisID: 'y',
+                                        tension: 0.3,
+                                        pointRadius: 4,
+                                        pointHoverRadius: 6,
+                                        fill: true
+                                    },
+                                    {
+                                        label: 'Chỉ số BMI',
+                                        data: bmis,
+                                        borderColor: '#0284c7',
+                                        backgroundColor: 'rgba(2,132,199,0.1)',
+                                        yAxisID: 'y1',
+                                        tension: 0.3,
+                                        pointRadius: 4,
+                                        pointHoverRadius: 6,
+                                        fill: false
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                interaction: { mode: 'index', intersect: false },
+                                stacked: false,
+                                plugins: {
+                                    legend: {
+                                        labels: { color: '#cbd5e1', font: { family: 'inherit', size: 12 } }
+                                    }
                                 },
-                                {
-                                    label: 'BMI',
-                                    data: bmis,
-                                    borderColor: '#007bff',
-                                    backgroundColor: 'rgba(0,123,255,0.1)',
-                                    yAxisID: 'y1',
-                                    tension: 0.2,
-                                    fill: true
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            interaction: { mode: 'index', intersect: false },
-                            stacked: false,
-                            scales: {
-                                y: {
-                                    type: 'linear',
-                                    display: true,
-                                    position: 'left',
-                                    title: { display: true, text: 'Cân nặng (kg)' }
-                                },
-                                y1: {
-                                    type: 'linear',
-                                    display: true,
-                                    position: 'right',
-                                    grid: { drawOnChartArea: false },
-                                    title: { display: true, text: 'BMI' }
+                                scales: {
+                                    x: {
+                                        ticks: { color: '#94a3b8' },
+                                        grid: { color: 'rgba(255,255,255,0.05)' }
+                                    },
+                                    y: {
+                                        type: 'linear',
+                                        display: true,
+                                        position: 'left',
+                                        ticks: { color: '#10b981' },
+                                        grid: { color: 'rgba(255,255,255,0.05)' },
+                                        title: { display: true, text: 'Cân nặng (kg)', color: '#10b981' }
+                                    },
+                                    y1: {
+                                        type: 'linear',
+                                        display: true,
+                                        position: 'right',
+                                        ticks: { color: '#38bdf8' },
+                                        grid: { drawOnChartArea: false },
+                                        title: { display: true, text: 'BMI', color: '#38bdf8' }
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
 
-                if (data.length > 0) {
-                    const latest = data[0];
-                    const bmiEl = document.getElementById('currentBmi');
-                    const ratingEl = document.getElementById('bmiRating');
-                    if (bmiEl) bmiEl.innerText = latest.BMI ?? '';
-                    if (ratingEl) ratingEl.innerText = computeRating(latest.BMI);
+                // 3.2 Cập nhật bảng Lịch sử
+                const tableBody = document.getElementById('tableBodyHealthHistory');
+                if (tableBody && data.length > 0) {
+                    let html = '';
+                    data.forEach(item => {
+                        const dateObj = new Date(item.ngayDo || item.NgayDo);
+                        const dateStr = dateObj.toLocaleDateString('vi-VN');
+                        const timeStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+                        const hVal = item.chieuCao ?? item.ChieuCao;
+                        const wVal = item.canNang ?? item.CanNang;
+                        const bmiVal = item.bmi ?? item.BMI ?? 0;
+                        const bmiRating = item.danhGiaBMI ?? item.DanhGiaBMI ?? computeBMIRating(bmiVal);
+
+                        const chest = item.vongNguc ?? item.VongNguc;
+                        const waist = item.vongEo ?? item.VongEo;
+                        const hip = item.vongHong ?? item.VongHong;
+                        const whr = item.tyLeEoHong ?? item.TyLeEoHong;
+                        const note = item.tinhTrangSucKhoe || item.TinhTrangSucKhoe || item.benhLy || item.BenhLy || '-';
+
+                        const measurementsStr = (chest || waist || hip)
+                            ? `${chest ? Number(chest).toFixed(1) : '-'} / ${waist ? Number(waist).toFixed(1) : '-'} / ${hip ? Number(hip).toFixed(1) : '-'} cm`
+                            : '-';
+
+                        html += `
+                            <tr>
+                                <td>
+                                    <div class="font-medium text-white">${dateStr}</div>
+                                    <div class="text-[11px] text-slate-500">${timeStr}</div>
+                                </td>
+                                <td>${hVal ? hVal + ' cm' : '-'}</td>
+                                <td><strong class="text-white">${wVal ? wVal + ' kg' : '-'}</strong></td>
+                                <td>
+                                    ${bmiVal > 0 ? `
+                                        <div>
+                                            <span class="font-bold text-emerald-400">${Number(bmiVal).toFixed(1)}</span>
+                                            <span class="hp-badge-sm">${bmiRating}</span>
+                                        </div>
+                                    ` : '-'}
+                                </td>
+                                <td><span class="font-mono text-xs text-slate-300">${measurementsStr}</span></td>
+                                <td><span class="font-semibold text-sky-400">${whr ? Number(whr).toFixed(2) : '-'}</span></td>
+                                <td class="text-xs text-slate-400 max-w-[200px] truncate" title="${note}">${note}</td>
+                            </tr>
+                        `;
+                    });
+                    tableBody.innerHTML = html;
                 }
 
             } catch (ex) {
@@ -97,8 +261,17 @@
             }
         }
 
+        // =========================================================
+        // 4. SUBMIT FORM QUA AJAX
+        // =========================================================
         async function submitHandler(e) {
             e.preventDefault();
+            const submitBtn = document.getElementById('btnSubmitHealth');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
+            }
+
             const fd = new FormData(form);
             const tokenInput = form.querySelector('input[name="__RequestVerificationToken"]');
             const token = tokenInput ? tokenInput.value : null;
@@ -117,23 +290,30 @@
                 const json = await res.json().catch(() => null);
 
                 if (json && json.success) {
+                    showToast('Đã lưu chỉ số InBody & hồ sơ sức khỏe thành công!');
                     await loadHistory();
-                    alert('Lưu thành công');
+                    updateRealtimeCalculations();
                 } else if (json && json.errors) {
                     const messages = [];
                     Object.values(json.errors).forEach(arr => arr.forEach(m => messages.push(m)));
-                    alert(messages.join('\n'));
+                    showToast(messages.join('. '), true);
                 } else {
                     window.location.reload();
                 }
 
             } catch (ex) {
                 console.error('Save failed', ex);
-                alert('Lưu thất bại');
+                showToast('Không thể lưu chỉ số, vui lòng thử lại.', true);
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu chỉ số InBody';
+                }
             }
         }
 
         if (form) form.addEventListener('submit', submitHandler);
         loadHistory();
+        updateRealtimeCalculations();
     });
 </script>

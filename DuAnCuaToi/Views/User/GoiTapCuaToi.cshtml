@@ -139,6 +139,22 @@
         </div>
     }
 
+    @if (TempData["Warning"] != null)
+    {
+        <div class="mb-6
+                    rounded-2xl
+                    border border-amber-500/20
+                    bg-amber-500/10
+                    px-5 py-4
+                    text-amber-300">
+
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+
+            @TempData["Warning"]
+
+        </div>
+    }
+
 
     <!-- ===================================================== -->
     <!-- ĐĂNG KÝ GÓI TẬP -->
@@ -749,57 +765,71 @@
                             </div>
 
 
-                            @if (dangHoatDong)
-                            {
-                                <span class="px-3 py-2
-                                             rounded-xl
-                                             bg-emerald-500/10
-                                             border border-emerald-500/20
-                                             text-emerald-400
-                                             text-sm
-                                             font-bold">
+                            <div class="flex items-center gap-3 flex-wrap justify-end">
+                                @if (dangHoatDong)
+                                {
+                                    <span class="px-3 py-2
+                                                 rounded-xl
+                                                 bg-emerald-500/10
+                                                 border border-emerald-500/20
+                                                 text-emerald-400
+                                                 text-sm
+                                                 font-bold">
 
-                                    <i class="fa-solid
-                                              fa-circle-check me-1"></i>
+                                        <i class="fa-solid
+                                                  fa-circle-check me-1"></i>
 
-                                    Đang hoạt động
+                                        Đang hoạt động
 
-                                </span>
-                            }
-                            else if (!item.TrangThai)
-                            {
-                                <span class="px-3 py-2
-                                             rounded-xl
-                                             bg-yellow-500/10
-                                             border border-yellow-500/20
-                                             text-yellow-400
-                                             text-sm
-                                             font-bold">
+                                    </span>
+                                }
+                                else if (!item.TrangThai)
+                                {
+                                    <span class="px-3 py-2
+                                                 rounded-xl
+                                                 bg-yellow-500/10
+                                                 border border-yellow-500/20
+                                                 text-yellow-400
+                                                 text-sm
+                                                 font-bold">
 
-                                    <i class="fa-solid
-                                              fa-clock me-1"></i>
+                                        <i class="fa-solid
+                                                  fa-clock me-1"></i>
 
-                                    Chờ thanh toán
+                                        Chờ thanh toán
 
-                                </span>
-                            }
-                            else
-                            {
-                                <span class="px-3 py-2
-                                             rounded-xl
-                                             bg-red-500/10
-                                             border border-red-500/20
-                                             text-red-400
-                                             text-sm
-                                             font-bold">
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="px-3 py-2
+                                                 rounded-xl
+                                                 bg-red-500/10
+                                                 border border-red-500/20
+                                                 text-red-400
+                                                 text-sm
+                                                 font-bold">
 
-                                    <i class="fa-solid
-                                              fa-circle-xmark me-1"></i>
+                                        <i class="fa-solid
+                                                  fa-circle-xmark me-1"></i>
 
-                                    Đã hết hạn
+                                        Đã hết hạn
 
-                                </span>
-                            }
+                                    </span>
+                                }
+
+                                @if (item.GoiTap != null && item.TrangThai)
+                                {
+                                    <form asp-controller="User" asp-action="GiaHanGoiTap" method="post" class="inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="goiTapId" value="@item.GoiTap.Id" />
+                                        <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold transition shadow shadow-orange-500/20">
+                                            <i class="fa-solid fa-rotate-right"></i>
+                                            <span>@(dangHoatDong ? "Gia hạn gói này" : "Gia hạn lại")</span>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
 
                         </div>
 

@@ -67,16 +67,19 @@
                     <span class="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full"></span>
                 </button>
                 <div class="h-6 w-[1px] bg-slate-800"></div>
-                <div class="flex items-center space-x-3">
+                <a asp-action="EditProfile" class="flex items-center space-x-3 p-1.5 hover:bg-slate-800/60 rounded-xl transition cursor-pointer" title="Thông tin cá nhân & Đổi mật khẩu">
                     <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center font-bold text-white text-xs shadow-md shadow-orange-500/20">
                         AG
                     </div>
                     <div class="hidden sm:block text-left text-xs">
-                        <div class="font-bold text-white">AdminGym</div>
+                        <div class="font-bold text-white hover:text-amber-400 flex items-center gap-1">
+                            AdminGym
+                            <i class="fa-solid fa-gear text-[10px] text-slate-400"></i>
+                        </div>
                         <div class="text-[10px] text-slate-400">Quản trị viên</div>
                     </div>
-                </div>
-                <a href="/" class="text-slate-400 hover:text-red-400 text-sm ml-2" title="Đăng xuất"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+                </a>
+                <a asp-controller="Home" asp-action="Logout" class="text-slate-400 hover:text-red-400 text-sm ml-2" title="Đăng xuất"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
             </div>
         </header>
 
@@ -105,19 +108,23 @@
                     <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Tổng Quan Hệ Thống</h1>
                     <p class="text-xs text-slate-400 mt-1">Thống kê hoạt động kinh doanh và tương tác AI theo thời gian thực.</p>
                 </div>
-                                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <a asp-controller="Admin" asp-action="TroLyAI"
+                       class="bg-gradient-to-r from-orange-500 via-amber-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-orange-500/20 flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-brain"></i>
+                        <span>Trợ Lý AI Quản Lý</span>
+                    </a>
                     <a asp-controller="BaoCaoDoanhThu" asp-action="Index"
                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition flex items-center justify-center space-x-2">
                         <i class="fa-solid fa-chart-line text-orange-400"></i>
                         <span>Báo Cáo Doanh Thu (AI)</span>
                     </a>
-                    <button onclick="toggleModal(true)" class="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-orange-500/20 flex items-center justify-center space-x-2 cursor-pointer">
-                        <i class="fa-solid fa-plus"></i>
+                    <button onclick="toggleModal(true)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition flex items-center justify-center space-x-2 cursor-pointer">
+                        <i class="fa-solid fa-plus text-emerald-400"></i>
                         <span>Thêm Hội Viên Mới</span>
                     </button>
                 </div>
             </div>
-            `
             <!-- 4 THẺ THỐNG KÊ TỔNG QUAN -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <!-- Thẻ 1 -->
@@ -257,14 +264,18 @@
                                                 <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-2.5 py-1 rounded-lg text-xs transition">
                                                     Lưu
                                                 </button>
-                                                <button
-    type="button"
-    onclick="openDeleteUserModal(@item.Id,'@item.HoTen')"
-    class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg">
-
-    Xóa
-
-</button>
+                                                <button type="button"
+                                                        onclick="openResetPasswordModal(@item.Id, '@item.HoTen', '@item.TenDangNhap')"
+                                                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-lg text-xs transition"
+                                                        title="Đặt lại mật khẩu">
+                                                    <i class="fa-solid fa-key me-1"></i>Reset MK
+                                                </button>
+                                                <button type="button"
+                                                        onclick="openDeleteUserModal(@item.Id,'@item.HoTen')"
+                                                        class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded-lg text-xs transition"
+                                                        title="Xóa tài khoản">
+                                                    <i class="fa-solid fa-trash me-1"></i>Xóa
+                                                </button>
                                             </form>
                                         </td>
                                     </tr>
@@ -578,6 +589,15 @@
             <form action="/Admin/CreateMember" method="post" class="space-y-3 text-xs">
                 @Html.AntiForgeryToken()
                 <div>
+                    <label class="block text-slate-400 mb-1">Vai Trò Hệ Thống</label>
+                    <select name="role" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-orange-500">
+                        <option value="HoiVien" selected>Hội Viên</option>
+                        <option value="PT">Huấn Luyện Viên (PT)</option>
+                        <option value="LeTan">Lễ Tân</option>
+                        <option value="Admin">Quản Trị Viên (Admin)</option>
+                    </select>
+                </div>
+                <div>
                     <label class="block text-slate-400 mb-1">Tên Đăng Nhập (SĐT / Username)</label>
                     <input type="text" name="username" required placeholder="hoivien01" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-orange-500" />
                 </div>
@@ -661,6 +681,37 @@
     </div>
 
 </div>
+
+    <!-- MODAL ĐẶT LẠI MẬT KHẨU CHO NGƯỜI DÙNG -->
+    <div id="resetPasswordModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
+            <div class="w-12 h-12 bg-indigo-500/10 text-indigo-400 rounded-full flex items-center justify-center mx-auto border border-indigo-500/20 text-xl">
+                <i class="fa-solid fa-key"></i>
+            </div>
+
+            <div class="text-center">
+                <h3 class="text-base font-bold text-white">Đặt Lại Mật Khẩu</h3>
+                <p class="text-xs text-slate-400 mt-1">
+                    Đặt lại mật khẩu cho tài khoản: <span id="resetUserName" class="text-amber-400 font-bold"></span>
+                </p>
+            </div>
+
+            <form action="/Admin/ResetPassword" method="post" class="space-y-3 text-xs">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="resetUserId" name="userId" />
+                <div>
+                    <label class="block text-slate-400 mb-1">Mật khẩu mới (Tối thiểu 6 ký tự)</label>
+                    <input type="text" id="resetNewPassword" name="newPassword" placeholder="Để trống sẽ mặc định là 123456" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 font-mono" />
+                    <p class="text-[10px] text-slate-500 mt-1">Gợi ý: Mặc định là 123456 nếu bạn không nhập gì.</p>
+                </div>
+
+                <div class="flex space-x-3 pt-2">
+                    <button type="button" onclick="closeResetPasswordModal()" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold py-2.5 rounded-xl transition">Hủy</button>
+                    <button type="submit" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2.5 rounded-xl transition shadow-lg shadow-indigo-600/20">Xác Nhận Đặt Lại</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <!-- SCRIPT RENDER BIỂU ĐỒ & BẬT/TẮT MODAL -->
     <script>
             function toggleModal(show) {
@@ -788,6 +839,35 @@ function closeDeleteUserModal()
     document.getElementById("deleteUserModal")
             .classList.add("hidden");
 }
+
+function openResetPasswordModal(id, name, username) {
+    document.getElementById("resetUserId").value = id;
+    document.getElementById("resetUserName").innerText = name + " (" + username + ")";
+    document.getElementById("resetNewPassword").value = "";
+
+    document.getElementById("resetPasswordModal").classList.remove("hidden");
+    document.getElementById("resetPasswordModal").classList.add("flex");
+}
+
+function closeResetPasswordModal() {
+    document.getElementById("resetPasswordModal").classList.remove("flex");
+    document.getElementById("resetPasswordModal").classList.add("hidden");
+}
     </script>
+
+    <!-- FLOATING ACTION BUTTON (AI ASSISTANT SHORTCUT) -->
+    <a asp-controller="Admin" asp-action="TroLyAI"
+       class="fixed bottom-6 right-6 z-40 group flex items-center gap-3 bg-gradient-to-r from-orange-500 via-amber-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white p-3.5 sm:px-5 sm:py-3.5 rounded-full shadow-2xl shadow-orange-500/40 hover:shadow-orange-500/60 transition-all duration-300 hover:scale-105"
+       title="Mở Trợ Lý AI Quản Lý">
+        <div class="relative flex items-center justify-center">
+            <i class="fa-solid fa-brain text-lg sm:text-xl"></i>
+            <span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-900 animate-ping"></span>
+            <span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-900"></span>
+        </div>
+        <div class="hidden sm:block text-left pr-1">
+            <div class="text-xs font-bold leading-none">SmartGym AI</div>
+            <div class="text-[10px] text-amber-100/90 leading-none mt-1">Cố vấn Quản lý</div>
+        </div>
+    </a>
 </body>
 </html>

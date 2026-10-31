@@ -85,6 +85,7 @@
     <div id="mobileMenu" class="hidden border-t border-slate-800 px-4 pb-4">
         <nav class="pt-3 space-y-1">
             <a href="@Url.Action("Index", "User")" class="nav-item active"><span class="nav-icon text-orange-400"><i class="fa-solid fa-house"></i></span><span>Trang chủ</span></a>
+            <a href="@Url.Action("CheckIn", "User")" class="nav-item"><span class="nav-icon text-emerald-400"><i class="fa-solid fa-door-open"></i></span><span>Điểm danh phòng tập</span></a>
             <a href="@Url.Action("GoiTapCuaToi", "User")" class="nav-item"><span class="nav-icon text-orange-400"><i class="fa-solid fa-id-card"></i></span><span>Gói tập của tôi</span></a>
             <a href="@Url.Action("LichTapCuaToi", "User")" class="nav-item"><span class="nav-icon text-blue-400"><i class="fa-solid fa-calendar-days"></i></span><span>Lịch tập của tôi</span></a>
             <a href="@Url.Action("LichSuDiemDanh", "User")" class="nav-item"><span class="nav-icon text-emerald-400"><i class="fa-solid fa-qrcode"></i></span><span>Lịch sử điểm danh</span></a>
@@ -96,7 +97,6 @@
                 </span><span>Thông báo</span>
             </a>
             <a href="@Url.Action("EditProfile", "User")" class="nav-item"><span class="nav-icon text-pink-400"><i class="fa-solid fa-user-pen"></i></span><span>Thông tin cá nhân</span></a>
-            <a href="@Url.Action("HealthProfile", "User")" class="nav-item"><span class="nav-icon text-emerald-400"><i class="fa-solid fa-heart-pulse"></i></span><span>Hồ sơ sức khỏe</span></a>
             <a href="@Url.Action("Logout", "Home")" class="nav-item text-red-400 hover:text-red-300 hover:bg-red-500/10 mt-2"><span class="nav-icon text-red-400"><i class="fa-solid fa-right-from-bracket"></i></span><span>Đăng xuất</span></a>
         </nav>
         <a href="@Url.Action("TroLyAI", "User")"
@@ -195,6 +195,7 @@
     <span class="text-sm">Trợ lý AI</span>
 </a>
             <a href="@Url.Action("GoiTapCuaToi", "User")" class="nav-item"><span class="nav-icon text-orange-400"><i class="fa-solid fa-id-card"></i></span><span class="text-sm">Gói tập của tôi</span></a>
+            <a href="@Url.Action("CheckIn", "User")" class="nav-item"><span class="nav-icon text-emerald-400"><i class="fa-solid fa-door-open"></i></span><span class="text-sm">Điểm danh phòng tập</span></a>
             <a href="@Url.Action("LichTapCuaToi", "User")" class="nav-item"><span class="nav-icon text-blue-400"><i class="fa-solid fa-calendar-days"></i></span><span class="text-sm">Lịch tập của tôi</span></a>
             <a href="@Url.Action("LichSuDiemDanh", "User")" class="nav-item"><span class="nav-icon text-emerald-400"><i class="fa-solid fa-qrcode"></i></span><span class="text-sm">Lịch sử điểm danh</span></a>
             <a href="@Url.Action("LichSuThanhToan", "User")" class="nav-item"><span class="nav-icon text-amber-400"><i class="fa-solid fa-receipt"></i></span><span class="text-sm">Lịch sử thanh toán</span></a>

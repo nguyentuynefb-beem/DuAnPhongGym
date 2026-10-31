@@ -1,4 +1,4 @@
-﻿@model DuAnCuaToi.Models.EditProfileViewModel
+@model DuAnCuaToi.Models.EditProfileViewModel
 
 <div class="profile-container">
 
@@ -17,76 +17,88 @@
 
         </div>
 
-        <form asp-action="EditProfile" method="post">
+        @if (TempData["Error"] != null)
+        {
+            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: 14px;">
+                <i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>@TempData["Error"]
+            </div>
+        }
+        @if (TempData["Success"] != null)
+        {
+            <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #6ee7b7; padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: 14px;">
+                <i class="fas fa-check-circle" style="margin-right: 8px;"></i>@TempData["Success"]
+            </div>
+        }
 
+        <form asp-action="EditProfile" method="post">
+            @Html.AntiForgeryToken()
             <input asp-for="Id" hidden />
 
-            <div class="form-group">
+            <div asp-validation-summary="ModelOnly" style="color: #fca5a5; margin-bottom: 15px; font-size: 13px;"></div>
 
+            <div class="form-group">
                 <label>Họ và tên</label>
-
                 <input asp-for="HoTen" class="form-control" />
-
+                <span asp-validation-for="HoTen" style="color: #fca5a5; font-size: 12px; margin-top: 4px; display: block;"></span>
             </div>
 
             <div class="form-group">
-
                 <label>Tên đăng nhập</label>
-
                 <input asp-for="TenDangNhap" class="form-control" />
-
+                <span asp-validation-for="TenDangNhap" style="color: #fca5a5; font-size: 12px; margin-top: 4px; display: block;"></span>
             </div>
 
-            <div class="row">
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #454b55;">
+                <h4 style="color: #ffc62a; font-size: 16px; font-weight: bold; margin-bottom: 12px;">
+                    <i class="fas fa-lock" style="margin-right: 6px;"></i>Đổi mật khẩu (Tùy chọn)
+                </h4>
+                <p style="color: #9ca3af; font-size: 13px; margin-bottom: 16px;">Để trống nếu bạn không muốn thay đổi mật khẩu hiện tại.</p>
 
-                <div class="col-md-6">
-
-                    <div class="form-group">
-
-                        <label>Mật khẩu mới</label>
-
-                        <input type="password"
-                               name="MatKhauMoi"
-                               class="form-control" />
-
-                    </div>
-
+                <div class="form-group">
+                    <label>Mật khẩu hiện tại</label>
+                    <input type="password"
+                           asp-for="MatKhauHienTai"
+                           placeholder="Nhập mật khẩu hiện tại"
+                           class="form-control" />
+                    <span asp-validation-for="MatKhauHienTai" style="color: #fca5a5; font-size: 12px; margin-top: 4px; display: block;"></span>
                 </div>
 
-                <div class="col-md-6">
-
-                    <div class="form-group">
-
-                        <label>Xác nhận mật khẩu</label>
-
-                        <input type="password"
-                               name="XacNhanMatKhau"
-                               class="form-control" />
-
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Mật khẩu mới (Tối thiểu 6 ký tự)</label>
+                            <input type="password"
+                                   asp-for="MatKhauMoi"
+                                   placeholder="••••••••"
+                                   class="form-control" />
+                            <span asp-validation-for="MatKhauMoi" style="color: #fca5a5; font-size: 12px; margin-top: 4px; display: block;"></span>
+                        </div>
                     </div>
 
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Xác nhận mật khẩu</label>
+                            <input type="password"
+                                   asp-for="XacNhanMatKhau"
+                                   placeholder="••••••••"
+                                   class="form-control" />
+                            <span asp-validation-for="XacNhanMatKhau" style="color: #fca5a5; font-size: 12px; margin-top: 4px; display: block;"></span>
+                        </div>
+                    </div>
                 </div>
-
             </div>
 
             <div class="button-group">
-
                 <button class="btn-save">
-
                     <i class="fas fa-save"></i>
                     Lưu thay đổi
-
                 </button>
 
                 <a href="javascript:history.back()"
                    class="btn-cancel">
-
                     Hủy
-
                 </a>
-
             </div>
-
         </form>
 
     </div>

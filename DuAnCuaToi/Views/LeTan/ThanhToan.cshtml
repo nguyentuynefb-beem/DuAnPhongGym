@@ -1,10 +1,12 @@
-﻿@using DuAnCuaToi.Models
+@using DuAnCuaToi.Models
 
 @{
     ViewData["Title"] = "Thanh toán tại quầy";
 
-    var hoiViens = ViewBag.HoiViens as List<NguoiDung>;
-    var goiTaps = ViewBag.GoiTaps as List<GoiTap>;
+    var hoiViens = (ViewBag.HoiViens as List<NguoiDung>) ?? new List<NguoiDung>();
+    var goiTaps = (ViewBag.GoiTaps as List<GoiTap>) ?? new List<GoiTap>();
+    int? selectedHoiVienId = ViewBag.SelectedHoiVienId as int?;
+    int? selectedGoiTapId = ViewBag.SelectedGoiTapId as int?;
 }
 
 <script src="https://cdn.tailwindcss.com"></script>
@@ -17,9 +19,9 @@
             <div>
                 <h1 class="text-xl sm:text-2xl font-black text-amber-400 uppercase tracking-wide flex items-center gap-3">
                     <i class="fa-solid fa-cash-register"></i>
-                    Thanh Toán Tại Quầy
+                    Thanh Toán & Gia Hạn Tại Quầy
                 </h1>
-                <p class="text-slate-400 text-sm mt-1">Đăng ký gói tập và thanh toán trực tiếp cho hội viên.</p>
+                <p class="text-slate-400 text-sm mt-1">Đăng ký gói tập hoặc gia hạn trực tiếp cho hội viên tại quầy lễ tân.</p>
             </div>
             <a asp-action="Index"
                class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shrink-0">
@@ -44,6 +46,7 @@
         }
 
         <form asp-action="ThanhToan" method="post" class="space-y-6">
+            @Html.AntiForgeryToken()
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
@@ -53,7 +56,8 @@
                         <option value="">-- Chọn hội viên --</option>
                         @foreach (var hv in hoiViens)
                         {
-                            <option value="@hv.Id">@hv.HoTen (@hv.MaHoiVien)</option>
+                            var isSel = selectedHoiVienId.HasValue && selectedHoiVienId.Value == hv.Id;
+                            <option value="@hv.Id" selected="@(isSel ? "selected" : null)">@hv.HoTen (@hv.MaHoiVien)</option>
                         }
                     </select>
                 </div>
@@ -65,7 +69,8 @@
                         <option value="">-- Chọn gói tập --</option>
                         @foreach (var item in goiTaps)
                         {
-                            <option value="@item.Id" data-price="@item.Gia" data-day="@item.ThoiHanNgay">@item.TenGoi</option>
+                            var isSel = selectedGoiTapId.HasValue && selectedGoiTapId.Value == item.Id;
+                            <option value="@item.Id" data-price="@item.Gia" data-day="@item.ThoiHanNgay" selected="@(isSel ? "selected" : null)">@item.TenGoi</option>
                         }
                     </select>
                 </div>
@@ -148,6 +153,10 @@
             days+" ngày";
 
         });
+
+        if (select.value) {
+            select.dispatchEvent(new Event('change'));
+        }
 
     </script>
 

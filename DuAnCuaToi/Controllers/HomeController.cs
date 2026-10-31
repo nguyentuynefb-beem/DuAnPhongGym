@@ -23,6 +23,36 @@ namespace DuAnCuaToi.Controllers
         [HttpGet]
         public IActionResult Index()
         {
+            var userId = HttpContext.Session.GetString("UserId");
+            var role = HttpContext.Session.GetString("Role");
+
+            // Phục hồi session nếu còn Cookie xác thực hợp lệ
+            if ((string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(role)) && User.Identity?.IsAuthenticated == true)
+            {
+                userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+                if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(role))
+                {
+                    HttpContext.Session.SetString("UserId", userId);
+                    HttpContext.Session.SetString("Role", role);
+                    HttpContext.Session.SetString("Username", User.FindFirst(ClaimTypes.Name)?.Value ?? "");
+                    HttpContext.Session.SetString("UserName", User.FindFirst("FullName")?.Value ?? "");
+                }
+            }
+
+            if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(role))
+            {
+                return role switch
+                {
+                    "Admin" or "AdminGym" => RedirectToAction("Index", "Admin"),
+                    "PT" => RedirectToAction("Index", "PT"),
+                    "LeTan" => RedirectToAction("Index", "LeTan"),
+                    "HoiVien" => RedirectToAction("Index", "User"),
+                    _ => View(new LoginViewModel())
+                };
+            }
+
             return View(new LoginViewModel());
         }
 
@@ -53,8 +83,6 @@ namespace DuAnCuaToi.Controllers
             var user = await _context.NguoiDungs
                 .FirstOrDefaultAsync(u => u.TenDangNhap == username && !u.IsDeleted);
 
-            // BCrypt.Verify sẽ ném lỗi nếu dữ liệu legacy từng lưu mật khẩu thô
-            // trong cột MatKhauHash. Coi hash sai định dạng là đăng nhập thất bại.
             var passwordValid = false;
             if (user != null && !string.IsNullOrWhiteSpace(user.MatKhauHash))
             {
@@ -64,7 +92,16 @@ namespace DuAnCuaToi.Controllers
                 }
                 catch
                 {
-                    passwordValid = false;
+                    // Tự động nâng cấp sang mã hóa BCrypt an toàn nếu dữ liệu cũ từng lưu mật khẩu thô
+                    if (model.Password == user.MatKhauHash)
+                    {
+                        passwordValid = true;
+                        user.MatKhauHash = BCrypt.Net.BCrypt.HashPassword(model.Password);
+                    }
+                    else
+                    {
+                        passwordValid = false;
+                    }
                 }
             }
 
@@ -219,10 +256,18 @@ namespace DuAnCuaToi.Controllers
             }
 
             // =====================================================
-            // LOẠI BỎ KHOẢNG TRẮNG THỪA
+            // LOẠI BỎ KHOẢNG TRẮNG THỪA & KIỂM TRA ĐỘ MẠNH MẬT KHẨU
             // =====================================================
             username = username.Trim();
             fullName = fullName.Trim();
+
+            if (password.Length < 6)
+            {
+                TempData["Error"] =
+                    "Mật khẩu phải có ít nhất 6 ký tự để đảm bảo an toàn!";
+
+                return RedirectToAction(nameof(Index));
+            }
 
             // =====================================================
             // KIỂM TRA TÊN ĐĂNG NHẬP ĐÃ TỒN TẠI CHƯA (trên các tài khoản đang hoạt động)

@@ -1,0 +1,138 @@
+@model DuAnCuaToi.Models.EditProfileViewModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thông Tin Quản Trị Viên - Smart Gym AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 500: '#f97316', 600: '#ea580c' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 font-sans">
+    <div class="min-h-full flex flex-col">
+        <!-- TOP HEADER -->
+        <header class="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-6 sticky top-0 z-30">
+            <div class="flex items-center space-x-3">
+                <a asp-action="Index" class="text-slate-400 hover:text-white transition flex items-center gap-2 text-sm font-semibold">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Quay lại Dashboard</span>
+                </a>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center font-bold text-white text-xs shadow-md shadow-orange-500/20">
+                        AG
+                    </div>
+                    <div class="hidden sm:block text-left text-xs">
+                        <div class="font-bold text-white">@Model.HoTen</div>
+                        <div class="text-[10px] text-slate-400">Quản trị viên</div>
+                    </div>
+                </div>
+                <a asp-controller="Home" asp-action="Logout" class="text-slate-400 hover:text-red-400 text-sm ml-2" title="Đăng xuất">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                </a>
+            </div>
+        </header>
+
+        <!-- MAIN CONTAINER -->
+        <main class="flex-1 max-w-2xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+            @if (TempData["Error"] != null)
+            {
+                <div class="p-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl text-xs flex items-center justify-between">
+                    <span class="flex items-center"><i class="fa-solid fa-triangle-exclamation me-2"></i>@TempData["Error"]</span>
+                    <button onclick="this.parentElement.remove()" class="text-red-400/60 hover:text-red-400"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            }
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
+                <div class="flex items-center space-x-4 border-b border-slate-800 pb-5">
+                    <div class="w-12 h-12 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center text-xl border border-orange-500/20">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg sm:text-xl font-bold text-white">Hồ Sơ Quản Trị Viên</h1>
+                        <p class="text-xs text-slate-400">Cập nhật thông tin định danh và đổi mật khẩu an toàn</p>
+                    </div>
+                </div>
+
+                <form asp-action="EditProfile" method="post" class="space-y-5">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+
+                    <!-- Họ và tên -->
+                    <div>
+                        <label asp-for="HoTen" class="block text-xs font-semibold text-slate-300 mb-1.5">Họ và tên</label>
+                        <input asp-for="HoTen" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500 transition" />
+                        <span asp-validation-for="HoTen" class="text-rose-400 text-xs mt-1 block"></span>
+                    </div>
+
+                    <!-- Tên đăng nhập -->
+                    <div>
+                        <label asp-for="TenDangNhap" class="block text-xs font-semibold text-slate-300 mb-1.5">Tên đăng nhập</label>
+                        <input asp-for="TenDangNhap" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500 transition font-mono" />
+                        <span asp-validation-for="TenDangNhap" class="text-rose-400 text-xs mt-1 block"></span>
+                    </div>
+
+                    <!-- VÙNG BẢO MẬT & ĐỔI MẬT KHẨU -->
+                    <div class="pt-4 border-t border-slate-800 space-y-4">
+                        <div class="flex items-center space-x-2 text-amber-400 text-sm font-bold">
+                            <i class="fa-solid fa-lock"></i>
+                            <span>Bảo Mật & Đổi Mật Khẩu</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Để trống các trường bên dưới nếu bạn không muốn thay đổi mật khẩu hiện tại.</p>
+
+                        <!-- Mật khẩu hiện tại -->
+                        <div>
+                            <label asp-for="MatKhauHienTai" class="block text-xs font-semibold text-slate-300 mb-1.5">Mật khẩu hiện tại (bắt buộc khi đổi mật khẩu)</label>
+                            <input asp-for="MatKhauHienTai" type="password" placeholder="Nhập mật khẩu hiện tại" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition" />
+                            <span asp-validation-for="MatKhauHienTai" class="text-rose-400 text-xs mt-1 block"></span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Mật khẩu mới -->
+                            <div>
+                                <label asp-for="MatKhauMoi" class="block text-xs font-semibold text-slate-300 mb-1.5">Mật khẩu mới (tối thiểu 6 ký tự)</label>
+                                <input asp-for="MatKhauMoi" type="password" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition" />
+                                <span asp-validation-for="MatKhauMoi" class="text-rose-400 text-xs mt-1 block"></span>
+                            </div>
+
+                            <!-- Xác nhận mật khẩu mới -->
+                            <div>
+                                <label asp-for="XacNhanMatKhau" class="block text-xs font-semibold text-slate-300 mb-1.5">Xác nhận mật khẩu mới</label>
+                                <input asp-for="XacNhanMatKhau" type="password" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition" />
+                                <span asp-validation-for="XacNhanMatKhau" class="text-rose-400 text-xs mt-1 block"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nút thao tác -->
+                    <div class="flex items-center space-x-3 pt-4">
+                        <a asp-action="Index" class="w-1/2 text-center bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl text-sm transition">
+                            Hủy bỏ
+                        </a>
+                        <button type="submit" class="w-1/2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold py-2.5 rounded-xl text-sm transition shadow-lg shadow-orange-500/20">
+                            <i class="fa-solid fa-floppy-disk me-1.5"></i>Lưu Thay Đổi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
