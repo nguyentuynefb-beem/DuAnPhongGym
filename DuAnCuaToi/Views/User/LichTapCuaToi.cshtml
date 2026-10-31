@@ -1,4 +1,4 @@
-﻿@model List<DuAnCuaToi.Models.LichTap>
+@model List<DuAnCuaToi.Models.LichTap>
 
 @{
     Layout = null;
@@ -143,13 +143,30 @@
         </div>
 
 
+        <!-- THÔNG BÁO ALERT -->
+        @if (TempData["Success"] != null)
+        {
+            <div class="mb-6 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-semibold flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-base"></i>
+                <span>@TempData["Success"]</span>
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm font-semibold flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-base"></i>
+                <span>@TempData["Error"]</span>
+            </div>
+        }
+
         <!-- =====================================================
              THỐNG KÊ
         ====================================================== -->
 
         <div class="grid
                     grid-cols-2
-                    lg:grid-cols-4
+                    sm:grid-cols-3
+                    lg:grid-cols-5
                     gap-4
                     mb-8">
 
@@ -244,6 +261,29 @@
 
             </div>
 
+
+            <!-- ĐÃ HỦY -->
+
+            <div class="bg-slate-900
+                        border border-slate-700/50
+                        rounded-2xl
+                        p-5">
+
+                <p class="text-xs text-slate-500">
+                    Đã hủy
+                </p>
+
+                <p class="text-2xl
+                          font-black
+                          text-slate-400
+                          mt-2">
+
+                    @(ViewBag.SoLichDaHuy ?? 0)
+
+                </p>
+
+            </div>
+
         </div>
 
 
@@ -264,7 +304,9 @@
                             ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                             : lich.TrangThai == "TuChoi"
                                 ? "bg-red-500/10 text-red-400 border-red-500/20"
-                                : "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                                : lich.TrangThai == "DaHuy"
+                                    ? "bg-slate-800 text-slate-400 border-slate-700"
+                                    : "bg-amber-500/10 text-amber-400 border-amber-500/20";
 
 
                     var trangThaiText =
@@ -272,7 +314,9 @@
                             ? "Đã duyệt"
                             : lich.TrangThai == "TuChoi"
                                 ? "Từ chối"
-                                : "Chờ duyệt";
+                                : lich.TrangThai == "DaHuy"
+                                    ? "Đã hủy"
+                                    : "Chờ duyệt";
 
 
                     <div class="bg-slate-900
@@ -391,7 +435,7 @@
                             </div>
 
 
-                            <!-- TRẠNG THÁI -->
+                            <!-- TRẠNG THÁI & HÀNH ĐỘNG -->
 
                             <div class="flex flex-col
                                         items-start
@@ -399,34 +443,52 @@
                                         gap-3">
 
 
-                                <span class="
-                                    inline-flex
-                                    items-center
-                                    gap-2
-                                    px-3 py-2
-                                    rounded-full
-                                    border
-                                    text-xs
-                                    font-bold
-                                    @trangThaiClass
-                                ">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="
+                                        inline-flex
+                                        items-center
+                                        gap-2
+                                        px-3 py-2
+                                        rounded-full
+                                        border
+                                        text-xs
+                                        font-bold
+                                        @trangThaiClass
+                                    ">
 
-                                    @if (lich.TrangThai == "DaDuyet")
-                                    {
-                                        <i class="fa-solid fa-circle-check"></i>
-                                    }
-                                    else if (lich.TrangThai == "TuChoi")
-                                    {
-                                        <i class="fa-solid fa-circle-xmark"></i>
-                                    }
-                                    else
-                                    {
-                                        <i class="fa-solid fa-clock"></i>
-                                    }
+                                        @if (lich.TrangThai == "DaDuyet")
+                                        {
+                                            <i class="fa-solid fa-circle-check"></i>
+                                        }
+                                        else if (lich.TrangThai == "TuChoi")
+                                        {
+                                            <i class="fa-solid fa-circle-xmark"></i>
+                                        }
+                                        else if (lich.TrangThai == "DaHuy")
+                                        {
+                                            <i class="fa-solid fa-ban"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fa-solid fa-clock"></i>
+                                        }
 
-                                    @trangThaiText
+                                        @trangThaiText
 
-                                </span>
+                                    </span>
+
+                                    @if ((lich.TrangThai == "ChoDuyet" || lich.TrangThai == "DaDuyet") && !lich.DaDiemDanh)
+                                    {
+                                        <form asp-controller="User" asp-action="HuyLichTap" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn hủy lịch tập này không?');" class="inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@lich.Id" />
+                                            <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/30 rounded-xl text-xs font-semibold transition" title="Hủy lịch hẹn">
+                                                <i class="fa-solid fa-ban"></i>
+                                                <span>Hủy lịch</span>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
 
 
                                 @if (lich.DaDiemDanh)
@@ -437,7 +499,7 @@
 
                                         <i class="fa-solid fa-check-double"></i>
 
-                                        Đã điểm danh
+                                        Đã điểm danh hoàn thành
 
                                     </span>
 

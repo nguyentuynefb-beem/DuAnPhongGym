@@ -725,5 +725,187 @@ namespace DuAnCuaToi.Services
                 _ => ""
             };
         }
+
+        // =========================================================
+        // TẠO CONTEXT TOÀN DIỆN CHO ADMIN AI
+        // =========================================================
+        public AIAdminSystemContext BuildAdminSystemContext(string question = "")
+        {
+            var today = DateTime.Today;
+            var thisMonth = today.Month;
+            var thisYear = today.Year;
+            var startOfMonth = new DateTime(thisYear, thisMonth, 1);
+            var startOfLastMonth = startOfMonth.AddMonths(-1);
+            var endOfLastMonth = startOfMonth.AddDays(-1);
+            var startOfWeek = today.AddDays(-(int)today.DayOfWeek + (int)DayOfWeek.Monday);
+
+            // 1. Thống kê tài khoản
+            var allUsers = _context.NguoiDungs
+                .AsNoTracking()
+                .Where(u => !u.IsDeleted)
+                .ToList();
+
+            var userStats = new AIAdminUserStats
+            {
+                TongSoNguoiDung = allUsers.Count,
+                TongHoiVien = allUsers.Count(u => u.VaiTro == "HoiVien"),
+                TongPT = allUsers.Count(u => u.VaiTro == "PT"),
+                TongLeTan = allUsers.Count(u => u.VaiTro == "LeTan"),
+                TongAdmin = allUsers.Count(u => u.VaiTro == "Admin" || u.VaiTro == "AdminGym"),
+                HoiVienMoiTrongThang = allUsers.Count(u => u.VaiTro == "HoiVien" && u.LastLogin >= startOfMonth),
+                HoiVienDangOnline = allUsers.Count(u => u.IsOnline),
+            };
+
+            // Gói tập hội viên
+            var dangKys = _context.DangKyGoiTaps
+                .AsNoTracking()
+                .Include(dk => dk.GoiTap)
+                .Where(dk => dk.TrangThai)
+                .ToList();
+
+            var activeMemberIds = dangKys
+                .Where(dk => dk.NgayHetHan >= DateTime.Now)
+                .Select(dk => dk.NguoiDungId)
+                .Distinct()
+                .ToHashSet();
+
+            userStats.HoiVienGoiConHan = activeMemberIds.Count;
+            userStats.HoiVienChuaCoGoiHoacHetHan = Math.Max(0, userStats.TongHoiVien - activeMemberIds.Count);
+
+            var sevenDaysLater = DateTime.Now.AddDays(7);
+            userStats.HoiVienSapHetHanGoi = dangKys
+                .Count(dk => dk.NgayHetHan >= DateTime.Now && dk.NgayHetHan <= sevenDaysLater);
+
+            // 2. Thống kê tài chính & doanh thu
+            var allPayments = _context.ThanhToans
+                .AsNoTracking()
+                .ToList();
+
+            var revenueToday = allPayments
+                .Where(p => p.NgayThanhToan.Date == today)
+                .Sum(p => p.SoTien);
+
+            var revenueThisMonth = allPayments
+                .Where(p => p.NgayThanhToan.Month == thisMonth && p.NgayThanhToan.Year == thisYear)
+                .Sum(p => p.SoTien);
+
+            var revenueLastMonth = allPayments
+                .Where(p => p.NgayThanhToan >= startOfLastMonth && p.NgayThanhToan <= endOfLastMonth)
+                .Sum(p => p.SoTien);
+
+            double growthRate = 0;
+            if (revenueLastMonth > 0)
+            {
+                growthRate = Math.Round((double)((revenueThisMonth - revenueLastMonth) / revenueLastMonth * 100), 1);
+            }
+
+            var invoicesThisMonth = _context.HoaDons
+                .AsNoTracking()
+                .Where(h => h.NgayLap.Month == thisMonth && h.NgayLap.Year == thisYear)
+                .ToList();
+
+            var pendingInvoicesCount = _context.HoaDons
+                .AsNoTracking()
+                .Count(h => h.TrangThai == "Chờ xác nhận" || h.TrangThai == "Chưa thanh toán");
+
+            // Top gói tập bán chạy
+            var topPackages = _context.HoaDons
+                .AsNoTracking()
+                .Include(h => h.DangKyGoiTap)
+                    .ThenInclude(dk => dk!.GoiTap)
+                .Where(h => h.TrangThai == "Đã thanh toán" && h.DangKyGoiTap != null && h.DangKyGoiTap.GoiTap != null)
+                .GroupBy(h => h.DangKyGoiTap!.GoiTap!.TenGoi)
+                .Select(g => new AIAdminTopPackage
+                {
+                    TenGoi = g.Key,
+                    SoLuongBan = g.Count(),
+                    TongDoanhThu = g.Sum(x => x.TongTien)
+                })
+                .OrderByDescending(x => x.TongDoanhThu)
+                .Take(5)
+                .ToList();
+
+            // Doanh thu theo phương thức thanh toán
+            var paymentMethods = allPayments
+                .GroupBy(p => string.IsNullOrWhiteSpace(p.PhuongThuc) ? "Khác" : p.PhuongThuc)
+                .Select(g => new AIAdminPaymentMethodStat
+                {
+                    PhuongThuc = g.Key,
+                    TongTien = g.Sum(x => x.SoTien),
+                    SoGiaoDich = g.Count()
+                })
+                .ToList();
+
+            var revenueStats = new AIAdminRevenueStats
+            {
+                DoanhThuHomNay = revenueToday,
+                DoanhThuThangNay = revenueThisMonth,
+                DoanhThuThangTruoc = revenueLastMonth,
+                TyLeTangTruongThang = growthRate,
+                TongHoaDonThangNay = invoicesThisMonth.Count,
+                SoHoaDonChoXacNhan = pendingInvoicesCount,
+                TopGoiTapBanChay = topPackages,
+                DoanhThuTheoPhuongThuc = paymentMethods
+            };
+
+            // 3. Vận hành check-in & lịch tập
+            var checkins = _context.CheckIns.AsNoTracking().ToList();
+            var checkinToday = checkins.Count(c => c.ThoiGian.Date == today);
+            var checkinThisWeek = checkins.Count(c => c.ThoiGian.Date >= startOfWeek);
+
+            var allSchedules = _context.LichTaps.AsNoTracking().ToList();
+            var schedulesThisWeek = allSchedules.Where(s => s.NgayTap.Date >= startOfWeek).ToList();
+
+            var operationsStats = new AIAdminOperationsStats
+            {
+                LuotCheckInHomNay = checkinToday,
+                LuotCheckInTuanNay = checkinThisWeek,
+                TongLichTapTuanNay = schedulesThisWeek.Count,
+                LichTapChoDuyet = allSchedules.Count(s => s.TrangThai == "ChoDuyet"),
+                LichTapDaDuyet = allSchedules.Count(s => s.TrangThai == "DaDuyet"),
+                LichTapDaHoanThanh = allSchedules.Count(s => s.TrangThai == "DaDiemDanh" || s.DaDiemDanh),
+                LichTapTuChoi = allSchedules.Count(s => s.TrangThai == "TuChoi")
+            };
+
+            // 4. Danh sách Gói tập
+            var goiTaps = _context.GoiTaps
+                .AsNoTracking()
+                .Where(g => !g.IsDeleted)
+                .OrderBy(g => g.Gia)
+                .Select(g => new AIGymPackage
+                {
+                    MaGoi = g.MaGoi,
+                    TenGoi = g.TenGoi,
+                    ThoiHanNgay = g.ThoiHanNgay,
+                    Gia = g.Gia,
+                    QuyenLoi = g.QuyenLoi ?? "",
+                    KhuyenMai = g.IsKhuyenMai
+                })
+                .ToList();
+
+            // 5. Danh sách PT
+            var ptUsers = allUsers.Where(u => u.VaiTro == "PT").ToList();
+            var ptSummaries = ptUsers.Select(pt => new AIAdminPTSummary
+            {
+                Id = pt.Id,
+                HoTen = pt.HoTen,
+                TenDangNhap = pt.TenDangNhap,
+                SoLopDangPhuTrach = allSchedules.Count(s => s.MaPT == pt.Id || s.PTUsername == pt.TenDangNhap),
+                SoHocVienDangKem = allSchedules
+                    .Where(s => s.MaPT == pt.Id || s.PTUsername == pt.TenDangNhap)
+                    .Select(s => s.HoiVienId)
+                    .Distinct()
+                    .Count()
+            }).ToList();
+
+            return new AIAdminSystemContext
+            {
+                UserStats = userStats,
+                RevenueStats = revenueStats,
+                OperationsStats = operationsStats,
+                DanhSachGoiTap = goiTaps,
+                DanhSachPT = ptSummaries
+            };
+        }
     }
 }

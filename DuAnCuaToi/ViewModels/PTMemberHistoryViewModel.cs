@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace DuAnCuaToi.ViewModels
 {
@@ -11,5 +12,7 @@ namespace DuAnCuaToi.ViewModels
         public string MaHoiVien { get; set; } = string.Empty;
 
         public List<HealthHistoryViewModel> LichSu { get; set; } = new();
+
+        public HealthHistoryViewModel? LatestHealth => LichSu.FirstOrDefault();
     }
 }

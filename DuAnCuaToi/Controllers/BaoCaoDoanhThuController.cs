@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using DuAnCuaToi.Filters;
 using DuAnCuaToi.Models;
 using DuAnCuaToi.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,7 @@ using Newtonsoft.Json;
 
 namespace DuAnCuaToi.Controllers
 {
+    [SessionRole("Admin", "AdminGym")]
     public class BaoCaoDoanhThuController : Controller
     {
         private readonly IRevenueReportService _revenueReportService;

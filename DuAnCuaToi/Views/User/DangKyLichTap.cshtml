@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Đăng Ký Lịch Tập 1:1";
 }
 
@@ -30,11 +30,19 @@
                 <span>@TempData["Success"]</span>
             </div>
         }
+        @if (TempData["Error"] != null)
+        {
+            <div class="p-4 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs rounded-xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-base"></i>
+                <span>@TempData["Error"]</span>
+            </div>
+        }
 
         <form asp-controller="User"
-      asp-action="DatLich"
-      method="post"
-      class="space-y-6 text-xs">
+              asp-action="DatLich"
+              method="post"
+              class="space-y-6 text-xs">
+            @Html.AntiForgeryToken()
 
             <!-- 1. CHỌN HLV -->
             <div>

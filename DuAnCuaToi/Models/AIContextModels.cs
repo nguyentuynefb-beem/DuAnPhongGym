@@ -1,4 +1,4 @@
-﻿namespace DuAnCuaToi.Models
+namespace DuAnCuaToi.Models
 {
     // =========================================================
     // CONTEXT RIÊNG CỦA HỘI VIÊN
@@ -217,5 +217,81 @@
             public string Role { get; set; } = "";
 
             public string Content { get; set; } = "";
+        }
+
+        // =========================================================
+        // CONTEXT HỆ THỐNG DÀNH CHO ADMIN AI
+        // =========================================================
+        public class AIAdminSystemContext
+        {
+            public AIAdminUserStats UserStats { get; set; } = new();
+
+            public AIAdminRevenueStats RevenueStats { get; set; } = new();
+
+            public AIAdminOperationsStats OperationsStats { get; set; } = new();
+
+            public List<AIGymPackage> DanhSachGoiTap { get; set; } = new();
+
+            public List<AIAdminPTSummary> DanhSachPT { get; set; } = new();
+        }
+
+        public class AIAdminUserStats
+        {
+            public int TongSoNguoiDung { get; set; }
+            public int TongHoiVien { get; set; }
+            public int TongPT { get; set; }
+            public int TongLeTan { get; set; }
+            public int TongAdmin { get; set; }
+            public int HoiVienMoiTrongThang { get; set; }
+            public int HoiVienDangOnline { get; set; }
+            public int HoiVienSapHetHanGoi { get; set; } // Hết hạn trong 7 ngày tới
+            public int HoiVienGoiConHan { get; set; }
+            public int HoiVienChuaCoGoiHoacHetHan { get; set; }
+        }
+
+        public class AIAdminRevenueStats
+        {
+            public decimal DoanhThuHomNay { get; set; }
+            public decimal DoanhThuThangNay { get; set; }
+            public decimal DoanhThuThangTruoc { get; set; }
+            public double TyLeTangTruongThang { get; set; }
+            public int TongHoaDonThangNay { get; set; }
+            public int SoHoaDonChoXacNhan { get; set; }
+            public List<AIAdminTopPackage> TopGoiTapBanChay { get; set; } = new();
+            public List<AIAdminPaymentMethodStat> DoanhThuTheoPhuongThuc { get; set; } = new();
+        }
+
+        public class AIAdminTopPackage
+        {
+            public string TenGoi { get; set; } = "";
+            public int SoLuongBan { get; set; }
+            public decimal TongDoanhThu { get; set; }
+        }
+
+        public class AIAdminPaymentMethodStat
+        {
+            public string PhuongThuc { get; set; } = "";
+            public decimal TongTien { get; set; }
+            public int SoGiaoDich { get; set; }
+        }
+
+        public class AIAdminOperationsStats
+        {
+            public int LuotCheckInHomNay { get; set; }
+            public int LuotCheckInTuanNay { get; set; }
+            public int TongLichTapTuanNay { get; set; }
+            public int LichTapChoDuyet { get; set; }
+            public int LichTapDaDuyet { get; set; }
+            public int LichTapDaHoanThanh { get; set; }
+            public int LichTapTuChoi { get; set; }
+        }
+
+        public class AIAdminPTSummary
+        {
+            public int Id { get; set; }
+            public string HoTen { get; set; } = "";
+            public string TenDangNhap { get; set; } = "";
+            public int SoLopDangPhuTrach { get; set; }
+            public int SoHocVienDangKem { get; set; }
         }
     }

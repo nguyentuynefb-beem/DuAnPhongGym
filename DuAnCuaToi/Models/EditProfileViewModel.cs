@@ -12,10 +12,15 @@ namespace DuAnCuaToi.Models
         [Required(ErrorMessage = "Tên đăng nhập không được để trống.")]
         public string TenDangNhap { get; set; } = "";
 
+        [Display(Name = "Mật khẩu hiện tại")]
+        public string? MatKhauHienTai { get; set; }
+
         [MinLength(6, ErrorMessage = "Mật khẩu mới phải có ít nhất 6 ký tự.")]
+        [Display(Name = "Mật khẩu mới")]
         public string? MatKhauMoi { get; set; }
 
         [Compare(nameof(MatKhauMoi), ErrorMessage = "Xác nhận mật khẩu không khớp.")]
+        [Display(Name = "Xác nhận mật khẩu")]
         public string? XacNhanMatKhau { get; set; }
     }
 }

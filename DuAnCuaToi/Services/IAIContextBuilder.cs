@@ -10,5 +10,6 @@ namespace DuAnCuaToi.Services
         AIMemberContext BuildMemberAIChatContext(int userId, string question);
         AIGymContext BuildGymAIChatContext(string question);
         List<AIPTAvailabilityData> BuildPTAvailabilityForAI(string question);
+        AIAdminSystemContext BuildAdminSystemContext(string question = "");
     }
 }
