@@ -155,6 +155,30 @@
         </div>
     }
 
+    @if (ViewBag.GoiTapSapHetHan == true)
+    {
+        var daysLeft = (int)(ViewBag.SoNgayConLaiGoiTap ?? 1);
+        <div class="mb-6 relative overflow-hidden rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-slate-900 p-5 shadow-lg shadow-amber-500/10">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-start sm:items-center gap-3.5">
+                    <div class="w-11 h-11 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-hourglass-half text-xl animate-pulse"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                <i class="fa-solid fa-sparkles me-1"></i>Trợ Lý AI Nhắc Nhở
+                            </span>
+                            <span class="text-sm font-bold text-amber-400">Gói tập [@ViewBag.TenGoiActive] sắp hết hạn!</span>
+                        </div>
+                        <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                            Gói tập của bạn sẽ hết hạn sau <strong class="text-white font-extrabold">@(daysLeft == 1 ? "1 ngày nữa (ngày mai)" : "2 ngày nữa")</strong>. Hãy chọn một gói tập bên dưới và nhấn <strong class="text-orange-400">Đăng ký ngay</strong> để cộng dồn thêm thời hạn sử dụng mà không lo mất ngày tập cũ!
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 
     <!-- ===================================================== -->
     <!-- ĐĂNG KÝ GÓI TẬP -->
