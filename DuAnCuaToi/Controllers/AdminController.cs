@@ -266,34 +266,7 @@ namespace DuAnCuaToi.Controllers
             return RedirectToAction("Index");
         }
 
-        // 3. ĐẶT LẠI MẬT KHẨU CHO NGƯỜI DÙNG (Admin Reset Password)
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ResetPassword(int userId, string? newPassword)
-        {
-            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Id == userId);
-            if (user == null)
-            {
-                TempData["Error"] = "Không tìm thấy tài khoản người dùng!";
-                return RedirectToAction("Index");
-            }
-
-            var passToSet = string.IsNullOrWhiteSpace(newPassword) ? "123456" : newPassword.Trim();
-            if (passToSet.Length < 6)
-            {
-                TempData["Error"] = "Mật khẩu đặt lại phải có ít nhất 6 ký tự!";
-                return RedirectToAction("Index");
-            }
-
-            user.MatKhauHash = BCrypt.Net.BCrypt.HashPassword(passToSet);
-            user.IsOnline = false; // Thu hồi trạng thái online
-            await _context.SaveChangesAsync();
-
-            TempData["Success"] = $"Đã đặt lại mật khẩu cho tài khoản [{user.HoTen}] ({user.TenDangNhap}) thành công! Mật khẩu mới: {passToSet}";
-            return RedirectToAction("Index");
-        }
-
-        // 4. TẠO TÀI KHOẢN MỚI THEO VAI TRÒ
+        // 3. TẠO TÀI KHOẢN MỚI THEO VAI TRÒ
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateMember(
@@ -413,52 +386,6 @@ namespace DuAnCuaToi.Controllers
 
             admin.HoTen = model.HoTen;
             admin.TenDangNhap = model.TenDangNhap;
-
-            // Xử lý đổi mật khẩu an toàn
-            if (!string.IsNullOrWhiteSpace(model.MatKhauMoi))
-            {
-                if (string.IsNullOrWhiteSpace(model.MatKhauHienTai))
-                {
-                    ModelState.AddModelError(nameof(model.MatKhauHienTai), "Vui lòng nhập mật khẩu hiện tại để xác thực đổi mật khẩu.");
-                    return View(model);
-                }
-
-                bool isOldPasswordCorrect = false;
-                try
-                {
-                    isOldPasswordCorrect = BCrypt.Net.BCrypt.Verify(model.MatKhauHienTai, admin.MatKhauHash);
-                }
-                catch
-                {
-                    isOldPasswordCorrect = (model.MatKhauHienTai == admin.MatKhauHash);
-                }
-
-                if (!isOldPasswordCorrect)
-                {
-                    ModelState.AddModelError(nameof(model.MatKhauHienTai), "Mật khẩu hiện tại không chính xác.");
-                    return View(model);
-                }
-
-                if (model.MatKhauMoi.Length < 6)
-                {
-                    ModelState.AddModelError(nameof(model.MatKhauMoi), "Mật khẩu mới phải có ít nhất 6 ký tự.");
-                    return View(model);
-                }
-
-                if (model.MatKhauMoi == model.MatKhauHienTai)
-                {
-                    ModelState.AddModelError(nameof(model.MatKhauMoi), "Mật khẩu mới không được trùng với mật khẩu hiện tại.");
-                    return View(model);
-                }
-
-                if (model.MatKhauMoi != model.XacNhanMatKhau)
-                {
-                    ModelState.AddModelError(nameof(model.XacNhanMatKhau), "Xác nhận mật khẩu mới không khớp.");
-                    return View(model);
-                }
-
-                admin.MatKhauHash = BCrypt.Net.BCrypt.HashPassword(model.MatKhauMoi);
-            }
 
             await _context.SaveChangesAsync();
 

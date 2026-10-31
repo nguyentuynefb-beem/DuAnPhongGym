@@ -265,12 +265,6 @@
                                                     Lưu
                                                 </button>
                                                 <button type="button"
-                                                        onclick="openResetPasswordModal(@item.Id, '@item.HoTen', '@item.TenDangNhap')"
-                                                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-lg text-xs transition"
-                                                        title="Đặt lại mật khẩu">
-                                                    <i class="fa-solid fa-key me-1"></i>Reset MK
-                                                </button>
-                                                <button type="button"
                                                         onclick="openDeleteUserModal(@item.Id,'@item.HoTen')"
                                                         class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded-lg text-xs transition"
                                                         title="Xóa tài khoản">
@@ -682,36 +676,6 @@
 
 </div>
 
-    <!-- MODAL ĐẶT LẠI MẬT KHẨU CHO NGƯỜI DÙNG -->
-    <div id="resetPasswordModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
-            <div class="w-12 h-12 bg-indigo-500/10 text-indigo-400 rounded-full flex items-center justify-center mx-auto border border-indigo-500/20 text-xl">
-                <i class="fa-solid fa-key"></i>
-            </div>
-
-            <div class="text-center">
-                <h3 class="text-base font-bold text-white">Đặt Lại Mật Khẩu</h3>
-                <p class="text-xs text-slate-400 mt-1">
-                    Đặt lại mật khẩu cho tài khoản: <span id="resetUserName" class="text-amber-400 font-bold"></span>
-                </p>
-            </div>
-
-            <form action="/Admin/ResetPassword" method="post" class="space-y-3 text-xs">
-                @Html.AntiForgeryToken()
-                <input type="hidden" id="resetUserId" name="userId" />
-                <div>
-                    <label class="block text-slate-400 mb-1">Mật khẩu mới (Tối thiểu 6 ký tự)</label>
-                    <input type="text" id="resetNewPassword" name="newPassword" placeholder="Để trống sẽ mặc định là 123456" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 font-mono" />
-                    <p class="text-[10px] text-slate-500 mt-1">Gợi ý: Mặc định là 123456 nếu bạn không nhập gì.</p>
-                </div>
-
-                <div class="flex space-x-3 pt-2">
-                    <button type="button" onclick="closeResetPasswordModal()" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold py-2.5 rounded-xl transition">Hủy</button>
-                    <button type="submit" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2.5 rounded-xl transition shadow-lg shadow-indigo-600/20">Xác Nhận Đặt Lại</button>
-                </div>
-            </form>
-        </div>
-    </div>
     <!-- SCRIPT RENDER BIỂU ĐỒ & BẬT/TẮT MODAL -->
     <script>
             function toggleModal(show) {
@@ -840,19 +804,6 @@ function closeDeleteUserModal()
             .classList.add("hidden");
 }
 
-function openResetPasswordModal(id, name, username) {
-    document.getElementById("resetUserId").value = id;
-    document.getElementById("resetUserName").innerText = name + " (" + username + ")";
-    document.getElementById("resetNewPassword").value = "";
-
-    document.getElementById("resetPasswordModal").classList.remove("hidden");
-    document.getElementById("resetPasswordModal").classList.add("flex");
-}
-
-function closeResetPasswordModal() {
-    document.getElementById("resetPasswordModal").classList.remove("flex");
-    document.getElementById("resetPasswordModal").classList.add("hidden");
-}
     </script>
 
     <!-- FLOATING ACTION BUTTON (AI ASSISTANT SHORTCUT) -->
