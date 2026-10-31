@@ -27,7 +27,12 @@ namespace DuAnCuaToi.Services
             {
                 NgayDo = x.NgayDo,
                 CanNang = x.CanNang,
-                ChieuCao = x.ChieuCao
+                ChieuCao = x.ChieuCao,
+                VongNguc = x.VongNguc,
+                VongEo = x.VongEo,
+                VongHong = x.VongHong,
+                TinhTrangSucKhoe = x.TinhTrangSucKhoe,
+                BenhLy = x.BenhLy
             }).ToList();
         }
 
@@ -45,7 +50,16 @@ namespace DuAnCuaToi.Services
                 .Where(x => x.HoiVienId == memberId)
                 .OrderByDescending(x => x.NgayDo)
                 .Take(10)
-                .Select(x => new { x.NgayDo, x.ChieuCao, x.CanNang })
+                .Select(x => new {
+                    x.NgayDo,
+                    x.ChieuCao,
+                    x.CanNang,
+                    x.VongNguc,
+                    x.VongEo,
+                    x.VongHong,
+                    x.TinhTrangSucKhoe,
+                    x.BenhLy
+                })
                 .ToListAsync();
 
             var ai = new
@@ -61,7 +75,16 @@ namespace DuAnCuaToi.Services
                     member.GhiChuSucKhoe,
                     member.PTPhuTrach
                 },
-                LatestHealth = latest == null ? null : new { latest.NgayDo, latest.ChieuCao, latest.CanNang },
+                LatestHealth = latest == null ? null : new {
+                    latest.NgayDo,
+                    latest.ChieuCao,
+                    latest.CanNang,
+                    latest.VongNguc,
+                    latest.VongEo,
+                    latest.VongHong,
+                    latest.TinhTrangSucKhoe,
+                    latest.BenhLy
+                },
                 RecentHealth = recent
             };
 

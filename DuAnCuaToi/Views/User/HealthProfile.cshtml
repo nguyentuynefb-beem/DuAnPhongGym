@@ -1,108 +1,280 @@
-﻿@model DuAnCuaToi.ViewModels.HealthProfileViewModel
+@model DuAnCuaToi.ViewModels.HealthProfileViewModel
 
 @{
-    ViewData["Title"] = "Hồ sơ sức khỏe";
+    ViewData["Title"] = "Hồ sơ sức khỏe & InBody";
 }
 
 <div class="hp-wrap">
     <div class="hp-card">
 
+        <!-- HEADER -->
         <div class="hp-header">
             <div class="hp-header-left">
                 <div class="hp-icon"><i class="fa-solid fa-heart-pulse"></i></div>
                 <div>
-                    <h2>Hồ sơ sức khỏe</h2>
-                    <p>Theo dõi chỉ số cơ thể và lịch sử tập luyện của bạn</p>
+                    <h2>Hồ sơ sức khỏe &amp; InBody</h2>
+                    <p>Theo dõi chỉ số sinh trắc học, thể trạng và tiến trình phát triển cơ thể</p>
                 </div>
             </div>
             <a href="@Url.Action("Index", "User")" class="hp-back">
-                <i class="fa-solid fa-arrow-left"></i> Trang chủ
+                <i class="fa-solid fa-arrow-left"></i> Về trang chủ
             </a>
         </div>
 
-        <form asp-action="HealthProfile" method="post" id="healthForm">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="hp-alert-success">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>@TempData["SuccessMessage"]</span>
+            </div>
+        }
 
-            @Html.AntiForgeryToken()
-            <input asp-for="HoiVienId" type="hidden" />
-
-            <div asp-validation-summary="All" class="hp-summary"></div>
-
-            <div class="hp-field">
-                <label>Họ tên</label>
-                <input asp-for="HoTen" class="hp-input" readonly />
+        <!-- 4 CARDS CHỈ SỐ INBODY MỞ RỘNG -->
+        <div class="hp-stats-grid">
+            <!-- 1. BMI & Thể trạng -->
+            <div class="hp-stat-card">
+                <div class="hp-stat-head">
+                    <span class="hp-stat-title">BMI &amp; Thể Trạng</span>
+                    <i class="fa-solid fa-weight-scale hp-stat-icon text-emerald-400"></i>
+                </div>
+                <div class="hp-stat-main">
+                    <span class="hp-stat-val" id="currentBmi">@(Model.BMI > 0 ? Model.BMI.ToString("0.0") : "--")</span>
+                    <span class="hp-badge" id="bmiRating">@Model.DanhGiaBMI</span>
+                </div>
+                <div class="hp-stat-sub">Chuẩn WPRO (Châu Á)</div>
             </div>
 
-            <div class="hp-grid hp-grid-2">
+            <!-- 2. Cân nặng lý tưởng -->
+            <div class="hp-stat-card">
+                <div class="hp-stat-head">
+                    <span class="hp-stat-title">Cân Nặng Lý Tưởng</span>
+                    <i class="fa-solid fa-bullseye hp-stat-icon text-amber-400"></i>
+                </div>
+                <div class="hp-stat-main">
+                    <span class="hp-stat-val text-amber-400" id="idealWeightRange">
+                        @if (Model.CanNangLyTuongMin.HasValue && Model.CanNangLyTuongMax.HasValue)
+                        {
+                            @($"{Model.CanNangLyTuongMin.Value:0.0} - {Model.CanNangLyTuongMax.Value:0.0} kg")
+                        }
+                        else
+                        {
+                            @("-- kg")
+                        }
+                    </span>
+                </div>
+                <div class="hp-stat-sub text-amber-300/80" id="weightAdvice">@Model.GoiYCanNang</div>
+            </div>
+
+            <!-- 3. Tỷ lệ Eo / Hông (WHR) -->
+            <div class="hp-stat-card">
+                <div class="hp-stat-head">
+                    <span class="hp-stat-title">Tỷ Lệ Eo / Hông (WHR)</span>
+                    <i class="fa-solid fa-ruler-combined hp-stat-icon text-sky-400"></i>
+                </div>
+                <div class="hp-stat-main">
+                    <span class="hp-stat-val text-sky-400" id="currentWhr">
+                        @(Model.TyLeEoHong.HasValue ? Model.TyLeEoHong.Value.ToString("0.00") : "--")
+                    </span>
+                    <span class="hp-badge-sky" id="whrRating">@Model.DanhGiaWHR</span>
+                </div>
+                <div class="hp-stat-sub">Đánh giá phân bố mỡ nội tạng</div>
+            </div>
+
+            <!-- 4. Năng lượng tiêu hao (BMR / TDEE) -->
+            <div class="hp-stat-card">
+                <div class="hp-stat-head">
+                    <span class="hp-stat-title">Năng Lượng Tiêu Hao</span>
+                    <i class="fa-solid fa-fire-flame-curved hp-stat-icon text-orange-400"></i>
+                </div>
+                <div class="hp-stat-main">
+                    <div>
+                        <span class="text-xs text-slate-400">BMR: </span>
+                        <strong class="text-white text-base" id="currentBmr">@(Model.BMR.HasValue ? $"{Model.BMR:N0}" : "--")</strong> <span class="text-[11px] text-slate-400">kcal</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-400">TDEE: </span>
+                        <strong class="text-orange-400 text-base" id="currentTdee">@(Model.TDEE.HasValue ? $"{Model.TDEE:N0}" : "--")</strong> <span class="text-[11px] text-slate-400">kcal</span>
+                    </div>
+                </div>
+                <div class="hp-stat-sub">Duy trì mức tập 3-5 buổi/tuần</div>
+            </div>
+        </div>
+
+        <!-- FORM NHẬP CHỈ SỐ INBODY -->
+        <div class="hp-form-box">
+            <h3 class="hp-section-title">
+                <i class="fa-solid fa-pen-to-square"></i> Cập Nhật Chỉ Số Mới
+            </h3>
+
+            <form asp-action="HealthProfile" method="post" id="healthForm">
+                @Html.AntiForgeryToken()
+                <input asp-for="HoiVienId" type="hidden" />
+
+                <div asp-validation-summary="All" class="hp-summary"></div>
+
                 <div class="hp-field">
-                    <label asp-for="ChieuCao"></label>
-                    <input asp-for="ChieuCao" class="hp-input" />
-                    <span asp-validation-for="ChieuCao" class="hp-error"></span>
+                    <label>Hội viên</label>
+                    <input asp-for="HoTen" class="hp-input" readonly />
                 </div>
-                <div class="hp-field">
-                    <label asp-for="CanNang"></label>
-                    <input asp-for="CanNang" class="hp-input" />
-                    <span asp-validation-for="CanNang" class="hp-error"></span>
+
+                <div class="hp-grid hp-grid-2">
+                    <div class="hp-field">
+                        <label asp-for="ChieuCao">Chiều cao (cm) <span class="text-rose-400">*</span></label>
+                        <input asp-for="ChieuCao" class="hp-input" placeholder="Ví dụ: 170" step="0.5" id="inputChieuCao" />
+                        <span asp-validation-for="ChieuCao" class="hp-error"></span>
+                    </div>
+                    <div class="hp-field">
+                        <label asp-for="CanNang">Cân nặng (kg) <span class="text-rose-400">*</span></label>
+                        <input asp-for="CanNang" class="hp-input" placeholder="Ví dụ: 65.5" step="0.1" id="inputCanNang" />
+                        <span asp-validation-for="CanNang" class="hp-error"></span>
+                    </div>
                 </div>
+
+                <div class="hp-grid hp-grid-3">
+                    <div class="hp-field">
+                        <label asp-for="VongNguc">Vòng ngực (cm)</label>
+                        <input asp-for="VongNguc" class="hp-input" placeholder="Ví dụ: 92" step="0.5" id="inputVongNguc" />
+                    </div>
+                    <div class="hp-field">
+                        <label asp-for="VongEo">Vòng eo (cm)</label>
+                        <input asp-for="VongEo" class="hp-input" placeholder="Ví dụ: 74" step="0.5" id="inputVongEo" />
+                    </div>
+                    <div class="hp-field">
+                        <label asp-for="VongHong">Vòng hông (cm)</label>
+                        <input asp-for="VongHong" class="hp-input" placeholder="Ví dụ: 96" step="0.5" id="inputVongHong" />
+                    </div>
+                </div>
+
+                <div class="hp-grid hp-grid-2">
+                    <div class="hp-field">
+                        <label asp-for="TinhTrangSucKhoe">Tình trạng thể lực hiện tại</label>
+                        <textarea asp-for="TinhTrangSucKhoe" class="hp-input hp-textarea" rows="2" placeholder="Ví dụ: Bình thường, hay mỏi vai gáy khi ngồi lâu..."></textarea>
+                    </div>
+                    <div class="hp-field">
+                        <label asp-for="BenhLy">Bệnh lý / Chấn thương cần lưu ý</label>
+                        <textarea asp-for="BenhLy" class="hp-input hp-textarea" rows="2" placeholder="Ví dụ: Đau khớp gối nhẹ, tiền sử huyết áp thấp..."></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="hp-btn-save" id="btnSubmitHealth">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu chỉ số InBody
+                </button>
+            </form>
+        </div>
+
+        <!-- BIỂU ĐỒ TIẾN TRÌNH CÂN NẶNG & BMI -->
+        <div class="hp-chart-card">
+            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <h5><i class="fa-solid fa-chart-line text-emerald-400"></i> Xu hướng Cân nặng &amp; BMI qua các lần đo</h5>
+                <span class="text-xs text-slate-400">Cập nhật theo thời gian</span>
             </div>
+            <canvas id="healthChart" height="110"></canvas>
+        </div>
 
-            <div class="hp-grid hp-grid-3">
-                <div class="hp-field">
-                    <label asp-for="VongNguc"></label>
-                    <input asp-for="VongNguc" class="hp-input" />
-                </div>
-                <div class="hp-field">
-                    <label asp-for="VongEo"></label>
-                    <input asp-for="VongEo" class="hp-input" />
-                </div>
-                <div class="hp-field">
-                    <label asp-for="VongHong"></label>
-                    <input asp-for="VongHong" class="hp-input" />
-                </div>
+        <!-- BẢNG LỊCH SỬ CÁC LẦN ĐO INBODY -->
+        <div class="hp-history-box">
+            <h3 class="hp-section-title">
+                <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> Lịch Sử Đo InBody
+            </h3>
+
+            <div class="hp-table-wrap">
+                <table class="hp-table" id="tableHealthHistory">
+                    <thead>
+                        <tr>
+                            <th>Ngày đo</th>
+                            <th>Chiều cao</th>
+                            <th>Cân nặng</th>
+                            <th>BMI / Thể trạng</th>
+                            <th>3 Vòng (N - E - H)</th>
+                            <th>WHR (Eo/Hông)</th>
+                            <th>Ghi chú</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBodyHealthHistory">
+                        @if (Model.LichSu == null || !Model.LichSu.Any())
+                        {
+                            <tr id="rowEmptyHistory">
+                                <td colspan="7" class="text-center py-6 text-slate-500">
+                                    Chưa có dữ liệu đo chỉ số sức khỏe nào.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in Model.LichSu)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="font-medium text-white">@item.NgayDo.ToString("dd/MM/yyyy")</div>
+                                        <div class="text-[11px] text-slate-500">@item.NgayDo.ToString("HH:mm")</div>
+                                    </td>
+                                    <td>@(item.ChieuCao.HasValue ? $"{item.ChieuCao} cm" : "-")</td>
+                                    <td>
+                                        <strong class="text-white">@(item.CanNang.HasValue ? $"{item.CanNang} kg" : "-")</strong>
+                                    </td>
+                                    <td>
+                                        @if (item.BMI > 0)
+                                        {
+                                            <div>
+                                                <span class="font-bold text-emerald-400">@item.BMI</span>
+                                                <span class="hp-badge-sm">@item.DanhGiaBMI</span>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span>-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.VongNguc.HasValue || item.VongEo.HasValue || item.VongHong.HasValue)
+                                        {
+                                            <span class="font-mono text-xs text-slate-300">
+                                                @(item.VongNguc?.ToString("0.#") ?? "-") / @(item.VongEo?.ToString("0.#") ?? "-") / @(item.VongHong?.ToString("0.#") ?? "-") cm
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-slate-500">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.TyLeEoHong.HasValue)
+                                        {
+                                            <span class="font-semibold text-sky-400">@item.TyLeEoHong.Value.ToString("0.00")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-slate-500">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-xs text-slate-400 max-w-[200px] truncate" title="@(item.TinhTrangSucKhoe ?? item.BenhLy ?? "")">
+                                        @(string.IsNullOrWhiteSpace(item.TinhTrangSucKhoe) ? (item.BenhLy ?? "-") : item.TinhTrangSucKhoe)
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
             </div>
-
-            <div class="hp-field">
-                <label asp-for="TinhTrangSucKhoe"></label>
-                <textarea asp-for="TinhTrangSucKhoe" class="hp-input hp-textarea" rows="2"></textarea>
-            </div>
-
-            <div class="hp-field">
-                <label asp-for="BenhLy"></label>
-                <textarea asp-for="BenhLy" class="hp-input hp-textarea" rows="2"></textarea>
-            </div>
-
-            <div class="hp-bmi-box">
-                <div>
-                    <span class="hp-bmi-label">BMI hiện tại</span>
-                    <div class="hp-bmi-value"><span id="currentBmi">@Model.BMI</span></div>
-                </div>
-                <div>
-                    <span class="hp-bmi-label">Đánh giá</span>
-                    <div class="hp-bmi-rating" id="bmiRating">@Model.DanhGiaBMI</div>
-                </div>
-            </div>
-
-            <div class="hp-chart-card">
-                <h5><i class="fa-solid fa-chart-line"></i> Lịch sử cân nặng &amp; BMI</h5>
-                <canvas id="healthChart" height="120"></canvas>
-            </div>
-
-            <button type="submit" class="hp-btn-save">
-                <i class="fa-solid fa-floppy-disk"></i> Lưu hồ sơ sức khỏe
-            </button>
-
-        </form>
+        </div>
 
     </div>
 </div>
 
+<!-- TOAST THÔNG BÁO TỰ ĐỘNG -->
+<div id="hpToast" class="hp-toast hidden">
+    <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+    <span id="hpToastMessage">Lưu thành công!</span>
+</div>
+
 <style>
-    .hp-wrap { max-width: 880px; margin: 2rem auto; padding: 0 1rem; }
+    .hp-wrap { max-width: 980px; margin: 2rem auto; padding: 0 1rem; font-family: inherit; }
 
     .hp-card {
-        background: rgba(15,23,42,.9);
-        border: 1px solid rgba(51,65,85,.8);
-        border-radius: 1.25rem;
-        box-shadow: 0 12px 30px rgba(0,0,0,.3);
+        background: #0f172a;
+        border: 1px solid #1e293b;
+        border-radius: 1.5rem;
+        box-shadow: 0 20px 40px rgba(0,0,0,.4);
         padding: 2rem;
     }
 
@@ -111,58 +283,133 @@
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
-        margin-bottom: 1.75rem;
+        margin-bottom: 2rem;
         flex-wrap: wrap;
     }
 
-    .hp-header-left { display: flex; align-items: center; gap: .9rem; }
+    .hp-header-left { display: flex; align-items: center; gap: 1rem; }
 
     .hp-icon {
-        width: 3rem; height: 3rem;
-        border-radius: .9rem;
+        width: 3.25rem; height: 3.25rem;
+        border-radius: 1rem;
         background: rgba(16,185,129,.12);
         color: #34d399;
         display: flex; align-items: center; justify-content: center;
-        font-size: 1.2rem;
+        font-size: 1.35rem;
         flex-shrink: 0;
+        border: 1px solid rgba(16,185,129,.2);
     }
 
-    .hp-header h2 { color: #f8fafc; font-weight: 800; margin: 0; font-size: 1.3rem; }
-    .hp-header p { color: #94a3b8; margin: .15rem 0 0; font-size: .85rem; }
+    .hp-header h2 { color: #f8fafc; font-weight: 800; margin: 0; font-size: 1.4rem; letter-spacing: -.02em; }
+    .hp-header p { color: #94a3b8; margin: .2rem 0 0; font-size: .88rem; }
 
     .hp-back {
-        color: #94a3b8;
+        color: #cbd5e1;
         text-decoration: none;
         font-size: .85rem;
         font-weight: 600;
-        padding: .5rem .9rem;
-        border-radius: .7rem;
+        padding: .6rem 1rem;
+        border-radius: .75rem;
+        background: #1e293b;
         border: 1px solid #334155;
         transition: .2s ease;
-        white-space: nowrap;
+        display: inline-flex; align-items: center; gap: .5rem;
     }
-    .hp-back:hover { color: #f8fafc; background: #1e293b; }
+    .hp-back:hover { color: #fff; background: #334155; }
 
-    .hp-summary { color: #f87171; margin-bottom: 1rem; }
-    .hp-summary ul { margin: 0; padding-left: 1.1rem; }
-    .hp-summary.validation-summary-valid { display: none; }
-    .hp-summary.validation-summary-errors {
-        background: rgba(239,68,68,.08);
-        border: 1px solid rgba(239,68,68,.25);
-        border-radius: .8rem;
-        padding: .8rem 1rem;
+    .hp-alert-success {
+        background: rgba(16,185,129,.1);
+        border: 1px solid rgba(16,185,129,.25);
+        color: #34d399;
+        border-radius: .85rem;
+        padding: .85rem 1.25rem;
+        margin-bottom: 1.5rem;
+        display: flex; align-items: center; gap: .6rem;
+        font-size: .9rem; font-weight: 600;
+    }
+
+    /* GRID 4 CARDS */
+    .hp-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    @@media (max-width: 900px) {
+        .hp-stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @@media (max-width: 520px) {
+        .hp-stats-grid { grid-template-columns: 1fr; }
+    }
+
+    .hp-stat-card {
+        background: #162032;
+        border: 1px solid #24324a;
+        border-radius: 1.15rem;
+        padding: 1.15rem;
+        display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .hp-stat-head {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: .6rem;
+    }
+    .hp-stat-title {
+        font-size: .75rem; text-transform: uppercase; letter-spacing: .06em;
+        color: #94a3b8; font-weight: 700;
+    }
+    .hp-stat-icon { font-size: 1rem; }
+    .hp-stat-main {
+        display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; margin-bottom: .3rem;
+    }
+    .hp-stat-val { font-size: 1.45rem; font-weight: 800; color: #f8fafc; }
+    .hp-stat-sub { font-size: .78rem; color: #64748b; line-height: 1.3; }
+
+    .hp-badge {
+        display: inline-block;
+        padding: .2rem .6rem;
+        border-radius: .5rem;
+        background: rgba(16,185,129,.15);
+        color: #34d399;
+        font-size: .75rem; font-weight: 700;
+        border: 1px solid rgba(16,185,129,.25);
+    }
+    .hp-badge-sky {
+        display: inline-block;
+        padding: .2rem .6rem;
+        border-radius: .5rem;
+        background: rgba(14,165,233,.15);
+        color: #38bdf8;
+        font-size: .75rem; font-weight: 700;
+        border: 1px solid rgba(14,165,233,.25);
+    }
+    .hp-badge-sm {
+        display: inline-block;
+        padding: .1rem .4rem;
+        border-radius: .4rem;
+        background: rgba(16,185,129,.12);
+        color: #34d399;
+        font-size: .7rem; font-weight: 600;
+        margin-left: .3rem;
+    }
+
+    /* FORM BOX */
+    .hp-form-box {
+        background: #162032;
+        border: 1px solid #24324a;
+        border-radius: 1.25rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .hp-section-title {
+        font-size: 1.05rem; font-weight: 700; color: #f8fafc;
+        margin: 0 0 1.25rem;
+        display: flex; align-items: center; gap: .5rem;
     }
 
     .hp-field { margin-bottom: 1.1rem; }
-
     .hp-field label {
-        display: block;
-        color: #cbd5e1;
-        font-weight: 600;
-        font-size: .85rem;
-        margin-bottom: .4rem;
+        display: block; color: #cbd5e1; font-weight: 600; font-size: .85rem; margin-bottom: .4rem;
     }
-
     .hp-input {
         width: 100%;
         background: #0f172a;
@@ -170,8 +417,7 @@
         border-radius: .75rem;
         padding: .7rem .85rem;
         color: #f8fafc;
-        outline: none;
-        font-size: .95rem;
+        outline: none; font-size: .95rem;
         transition: .15s ease;
         box-sizing: border-box;
     }
@@ -180,53 +426,19 @@
         box-shadow: 0 0 0 3px rgba(16,185,129,.15);
     }
     .hp-input[readonly] { color: #94a3b8; background: #0b1220; }
-    .hp-input.input-validation-error { border-color: #ef4444; }
-
     .hp-textarea { resize: vertical; }
-
-    .hp-error {
-        display: block;
-        color: #f87171;
-        font-size: .78rem;
-        margin-top: .3rem;
+    .hp-error { display: block; color: #f87171; font-size: .78rem; margin-top: .3rem; }
+    .hp-summary.validation-summary-valid { display: none; }
+    .hp-summary.validation-summary-errors {
+        background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3);
+        color: #f87171; border-radius: .75rem; padding: .8rem 1rem; margin-bottom: 1rem;
     }
-    .hp-error.field-validation-valid { display: none; }
 
     .hp-grid { display: grid; gap: 1rem; }
     .hp-grid-2 { grid-template-columns: repeat(2, 1fr); }
     .hp-grid-3 { grid-template-columns: repeat(3, 1fr); }
     @@media (max-width: 640px) {
         .hp-grid-2, .hp-grid-3 { grid-template-columns: 1fr; }
-    }
-
-    .hp-bmi-box {
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        background: rgba(16,185,129,.08);
-        border: 1px solid rgba(16,185,129,.2);
-        border-radius: .9rem;
-        padding: 1rem 1.25rem;
-        margin-bottom: 1.25rem;
-        flex-wrap: wrap;
-    }
-    .hp-bmi-label { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: #6ee7b7; font-weight: 700; }
-    .hp-bmi-value { font-size: 1.4rem; font-weight: 800; color: #f8fafc; margin-top: .2rem; }
-    .hp-bmi-rating { font-size: 1rem; font-weight: 700; color: #f8fafc; margin-top: .2rem; }
-
-    .hp-chart-card {
-        background: #0f172a;
-        border: 1px solid #334155;
-        border-radius: .9rem;
-        padding: 1.1rem 1.25rem;
-        margin-bottom: 1.5rem;
-    }
-    .hp-chart-card h5 {
-        color: #e2e8f0;
-        font-size: .9rem;
-        font-weight: 700;
-        margin: 0 0 .8rem;
-        display: flex; align-items: center; gap: .5rem;
     }
 
     .hp-btn-save {
@@ -241,16 +453,72 @@
         cursor: pointer;
         transition: .2s ease;
         display: flex; align-items: center; justify-content: center; gap: .5rem;
+        margin-top: .5rem;
     }
-    .hp-btn-save:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .hp-btn-save:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+    /* CHART CARD */
+    .hp-chart-card {
+        background: #162032;
+        border: 1px solid #24324a;
+        border-radius: 1.25rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .hp-chart-card h5 {
+        color: #f8fafc; font-size: .95rem; font-weight: 700; margin: 0;
+        display: flex; align-items: center; gap: .5rem;
+    }
+
+    /* HISTORY TABLE */
+    .hp-history-box {
+        background: #162032;
+        border: 1px solid #24324a;
+        border-radius: 1.25rem;
+        padding: 1.5rem;
+    }
+    .hp-table-wrap { overflow-x: auto; }
+    .hp-table {
+        width: 100%; border-collapse: collapse; font-size: .85rem; text-align: left;
+    }
+    .hp-table th {
+        background: #0f172a;
+        color: #94a3b8;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: .72rem;
+        letter-spacing: .06em;
+        padding: .85rem 1rem;
+        border-bottom: 1px solid #24324a;
+    }
+    .hp-table td {
+        padding: .85rem 1rem;
+        border-bottom: 1px solid #1e293b;
+        color: #cbd5e1;
+    }
+    .hp-table tr:hover td { background: rgba(255,255,255,.02); }
+
+    /* TOAST */
+    .hp-toast {
+        position: fixed;
+        bottom: 2rem; right: 2rem;
+        background: #0f172a;
+        border: 1px solid #10b981;
+        color: #f8fafc;
+        padding: .9rem 1.4rem;
+        border-radius: .9rem;
+        box-shadow: 0 10px 25px rgba(0,0,0,.5);
+        display: flex; align-items: center; gap: .75rem;
+        font-weight: 600; font-size: .9rem;
+        z-index: 9999;
+        transition: all .3s ease;
+    }
+    .hp-toast.hidden { opacity: 0; pointer-events: none; transform: translateY(1rem); }
 </style>
 
 @section Scripts {
-
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
-
     @await Html.PartialAsync("_HealthScripts")
-
 }

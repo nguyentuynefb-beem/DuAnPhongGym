@@ -1,4 +1,4 @@
-﻿@model List<DuAnCuaToi.Models.HoaDon>
+@model List<DuAnCuaToi.Models.HoaDon>
 
 @{
     Layout = null;
@@ -461,28 +461,76 @@
                                             </span>
 
                                         }
+                                        else if (string.Equals(hoaDon.TrangThai, "Chờ xác nhận", StringComparison.OrdinalIgnoreCase))
+                                        {
+
+                                            <div class="flex items-center gap-2">
+
+                                                <span class="
+                                                    inline-flex
+                                                    items-center
+                                                    gap-1.5
+                                                    px-3 py-1
+                                                    rounded-full
+                                                    bg-sky-500/10
+                                                    text-sky-400
+                                                    border border-sky-500/20
+                                                    text-xs
+                                                    font-bold
+                                                ">
+
+                                                    <i class="fa-solid
+                                                              fa-hourglass-half"></i>
+
+                                                    Chờ xác nhận
+
+                                                </span>
+
+                                                <a asp-action="ThanhToanGoiTap"
+                                                   asp-route-id="@hoaDon.Id"
+                                                   class="text-xs text-slate-400 hover:text-white underline">
+
+                                                    Chi tiết
+
+                                                </a>
+
+                                            </div>
+
+                                        }
                                         else
                                         {
 
-                                            <span class="
-                                                inline-flex
-                                                items-center
-                                                gap-2
-                                                px-3 py-1
-                                                rounded-full
-                                                bg-amber-500/10
-                                                text-amber-400
-                                                border border-amber-500/20
-                                                text-xs
-                                                font-bold
-                                            ">
+                                            <div class="flex items-center gap-2">
 
-                                                <i class="fa-solid
-                                                          fa-clock"></i>
+                                                <span class="
+                                                    inline-flex
+                                                    items-center
+                                                    gap-1.5
+                                                    px-3 py-1
+                                                    rounded-full
+                                                    bg-amber-500/10
+                                                    text-amber-400
+                                                    border border-amber-500/20
+                                                    text-xs
+                                                    font-bold
+                                                ">
 
-                                                Chưa thanh toán
+                                                    <i class="fa-solid
+                                                              fa-clock"></i>
 
-                                            </span>
+                                                    Chưa thanh toán
+
+                                                </span>
+
+                                                <a asp-action="ThanhToanGoiTap"
+                                                   asp-route-id="@hoaDon.Id"
+                                                   class="px-2.5 py-1 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold transition">
+
+                                                    Thanh toán
+
+                                                </a>
+
+                                            </div>
 
                                         }
 

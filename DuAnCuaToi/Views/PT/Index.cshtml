@@ -1,4 +1,4 @@
-﻿@model DuAnCuaToi.Models.PTDashboardViewModel
+@model DuAnCuaToi.Models.PTDashboardViewModel
 @{
     ViewData["Title"] = "Dashboard Huấn Luyện Viên";
 }
@@ -58,6 +58,22 @@
         </div>
     </div>
 
+    <!-- THÔNG BÁO ALERT -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-semibold flex items-center gap-2">
+            <i class="fa-solid fa-circle-check text-base"></i>
+            <span>@TempData["Success"]</span>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm font-semibold flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-base"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
     <!-- KHU VỰC THÔNG BÁO DUYỆT LỊCH ĐẶT MỚI (TỪ VIEWBAG) -->
     @if (ViewBag.PendingRequests != null && ViewBag.PendingCount > 0)
     {
@@ -82,36 +98,37 @@
                         </div>
                         <div class="flex gap-2 w-full sm:w-auto justify-end">
 
-                                <form asp-controller="PT"
-                                      asp-action="XacNhanLich"
-                                      method="post">
+                            <form asp-controller="PT"
+                                  asp-action="XacNhanLich"
+                                  method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden"
+                                       name="id"
+                                       value="@req.Id" />
 
-                                    <input type="hidden"
-                                           name="id"
-                                           value="@req.Id" />
+                                <button type="submit" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow">
+                                    <i class="fa-solid fa-check"></i> Duyệt
+                                </button>
 
-                                    <button type="submit">
-                                        Duyệt
-                                    </button>
+                            </form>
 
-                                </form>
+                            <form asp-controller="PT"
+                                  asp-action="TuChoiLich"
+                                  method="post"
+                                  onsubmit="return confirm('Bạn có chắc muốn từ chối lịch này?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden"
+                                       name="id"
+                                       value="@req.Id" />
 
-                                <form asp-controller="PT"
-                                      asp-action="TuChoiLich"
-                                      method="post">
+                                <button type="submit" class="px-3.5 py-1.5 bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-xmark"></i> Từ chối
+                                </button>
 
-                                    <input type="hidden"
-                                           name="id"
-                                           value="@req.Id" />
+                            </form>
 
-                                    <button type="submit">
-                                        Từ chối
-                                    </button>
-
-                                </form>
-
-                            </div>
                         </div>
+                    </div>
                 }
             </div>
         </div>
@@ -183,7 +200,24 @@
                                         <div class="text-slate-400">Nội dung: @item.NoiDungTap</div>
                                     </div>
                                 </div>
-                                <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg font-semibold">@item.TrangThai</span>
+                                <div class="flex items-center gap-3">
+                                    @if (item.TrangThai == "Đã Hoàn Thành")
+                                    {
+                                        <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg font-semibold flex items-center gap-1">
+                                            <i class="fa-solid fa-check-double"></i> Đã hoàn thành
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <form asp-controller="PT" asp-action="DiemDanhBuoiTap" method="post" onsubmit="return confirm('Xác nhận điểm danh / hoàn thành buổi tập này cho hội viên @item.TenHoiVien?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit" class="px-3 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-slate-950 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow transition">
+                                                <i class="fa-solid fa-clipboard-check"></i> Điểm danh buổi tập
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
                             </div>
                         }
                     }

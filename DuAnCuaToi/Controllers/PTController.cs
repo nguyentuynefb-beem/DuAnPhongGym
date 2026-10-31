@@ -4,6 +4,7 @@ using DuAnCuaToi.Data;
 using DuAnCuaToi.Models;
 using DuAnCuaToi.Services;
 using DuAnCuaToi.Filters;
+using DuAnCuaToi.ViewModels;
 
 namespace DuAnCuaToi.Controllers
 {
@@ -362,6 +363,36 @@ namespace DuAnCuaToi.Controllers
         }
 
         // =========================================================
+        // PT GHI NHẬN CHỈ SỐ INBODY CHO HỌC VIÊN
+        // =========================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveMemberHealth(HealthProfileViewModel model)
+        {
+            var pt = await GetCurrentPtAsync();
+            if (pt == null)
+                return RedirectToAction("Index", "Home");
+
+            var member = await _context.NguoiDungs.FirstOrDefaultAsync(x => x.Id == model.HoiVienId && x.VaiTro == "HoiVien");
+            if (member == null)
+            {
+                TempData["Error"] = "Không tìm thấy học viên.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!model.ChieuCao.HasValue && !model.CanNang.HasValue)
+            {
+                TempData["Error"] = "Vui lòng nhập ít nhất chiều cao hoặc cân nặng.";
+                return RedirectToAction(nameof(MemberHistory), new { memberId = model.HoiVienId });
+            }
+
+            await _healthService.SaveHealthAsync(model.HoiVienId, model);
+
+            TempData["Success"] = $"Đã ghi nhận chỉ số InBody cho học viên {member.HoTen} thành công.";
+            return RedirectToAction(nameof(MemberHistory), new { memberId = model.HoiVienId });
+        }
+
+        // =========================================================
         // AI CONTEXT FOR MEMBER (JSON) - minimal context for PT assistance
         // =========================================================
         [HttpGet]
@@ -410,10 +441,56 @@ namespace DuAnCuaToi.Controllers
 
             if (lich == null)
             {
-                return NotFound();
+                TempData["Error"] = "Không tìm thấy lịch tập cần duyệt.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Chặn nếu PT đã có lịch khác đã được duyệt trong cùng ngày và cùng khung giờ
+            bool ptDaCoLichTrung = await _context.LichTaps.AnyAsync(x =>
+                x.Id != id &&
+                (x.MaPT == pt.Id || x.PTUsername == pt.TenDangNhap) &&
+                x.NgayTap.Date == lich.NgayTap.Date &&
+                x.KhungGio == lich.KhungGio &&
+                x.TrangThai == "DaDuyet");
+
+            if (ptDaCoLichTrung)
+            {
+                TempData["Error"] = $"Không thể duyệt vì bạn đã có một buổi tập khác được duyệt vào khung giờ {lich.KhungGio} ngày {lich.NgayTap:dd/MM/yyyy}!";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Chặn nếu Hội viên đã có lịch khác đã được duyệt cùng khung giờ
+            bool hvDaCoLichTrung = await _context.LichTaps.AnyAsync(x =>
+                x.Id != id &&
+                x.HoiVienId == lich.HoiVienId &&
+                x.NgayTap.Date == lich.NgayTap.Date &&
+                x.KhungGio == lich.KhungGio &&
+                x.TrangThai == "DaDuyet");
+
+            if (hvDaCoLichTrung)
+            {
+                TempData["Error"] = $"Không thể duyệt vì hội viên này đã có một lịch tập khác đã duyệt trong khung giờ {lich.KhungGio} ngày {lich.NgayTap:dd/MM/yyyy}!";
+                return RedirectToAction(nameof(Index));
             }
 
             lich.TrangThai = "DaDuyet";
+
+            // Đồng bộ thời gian bắt đầu và kết thúc
+            if (!string.IsNullOrWhiteSpace(lich.KhungGio) && lich.KhungGio.Contains('-'))
+            {
+                var parts = lich.KhungGio.Split('-');
+                if (parts.Length == 2)
+                {
+                    if (TimeSpan.TryParse(parts[0].Trim(), out TimeSpan tBatDau))
+                    {
+                        lich.ThoiGianBatDau = lich.NgayTap.Date.Add(tBatDau);
+                    }
+                    if (TimeSpan.TryParse(parts[1].Trim(), out TimeSpan tKetThuc))
+                    {
+                        lich.ThoiGianKetThuc = lich.NgayTap.Date.Add(tKetThuc);
+                    }
+                }
+            }
 
             _context.ThongBaos.Add(
                 new ThongBao
@@ -426,7 +503,7 @@ namespace DuAnCuaToi.Controllers
                         $"{lich.NgayTap:dd/MM/yyyy} " +
                         $"khung giờ " +
                         $"{lich.KhungGio} " +
-                        $"đã được HLV xác nhận.",
+                        $"đã được HLV {pt.HoTen} xác nhận.",
 
                     DaDoc = false,
 
@@ -435,6 +512,8 @@ namespace DuAnCuaToi.Controllers
                 });
 
             await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"Đã duyệt lịch tập ngày {lich.NgayTap:dd/MM/yyyy} ({lich.KhungGio}) thành công!";
 
             return RedirectToAction(
                 nameof(Index));
@@ -470,7 +549,8 @@ namespace DuAnCuaToi.Controllers
 
             if (lich == null)
             {
-                return NotFound();
+                TempData["Error"] = "Không tìm thấy lịch tập cần từ chối.";
+                return RedirectToAction(nameof(Index));
             }
 
             lich.TrangThai = "TuChoi";
@@ -486,7 +566,7 @@ namespace DuAnCuaToi.Controllers
                         $"{lich.NgayTap:dd/MM/yyyy} " +
                         $"khung giờ " +
                         $"{lich.KhungGio} " +
-                        $"đã bị HLV từ chối.",
+                        $"đã bị HLV {pt.HoTen} từ chối.",
 
                     DaDoc = false,
 
@@ -496,8 +576,70 @@ namespace DuAnCuaToi.Controllers
 
             await _context.SaveChangesAsync();
 
+            TempData["Success"] = $"Đã từ chối lịch tập ngày {lich.NgayTap:dd/MM/yyyy} ({lich.KhungGio}).";
+
             return RedirectToAction(
                 nameof(Index));
+        }
+
+        // =========================================================
+        // PT ĐIỂM DANH / HOÀN THÀNH BUỔI TẬP
+        // =========================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DiemDanhBuoiTap(int id)
+        {
+            var pt = await GetCurrentPtAsync();
+
+            if (pt == null)
+            {
+                return Unauthorized();
+            }
+
+            var lich = await _context.LichTaps
+                .Include(x => x.HoiVien)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == id &&
+                    (
+                        x.MaPT == pt.Id ||
+                        x.PTUsername == pt.TenDangNhap
+                    ));
+
+            if (lich == null)
+            {
+                TempData["Error"] = "Không tìm thấy thông tin lịch tập.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (lich.TrangThai != "DaDuyet")
+            {
+                TempData["Error"] = "Chỉ có thể điểm danh các buổi tập đã được xác nhận duyệt.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (lich.DaDiemDanh)
+            {
+                TempData["Success"] = "Buổi tập này đã được điểm danh hoàn thành trước đó.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            lich.DaDiemDanh = true;
+
+            // Thông báo cho Hội viên
+            _context.ThongBaos.Add(
+                new ThongBao
+                {
+                    NguoiNhanId = lich.HoiVienId,
+                    NoiDung = $"Buổi tập ngày {lich.NgayTap:dd/MM/yyyy} (khung giờ {lich.KhungGio}) đã được HLV {pt.HoTen} điểm danh hoàn thành.",
+                    DaDoc = false,
+                    NgayTao = DateTime.Now
+                });
+
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"Đã điểm danh hoàn thành buổi tập của hội viên {lich.HoiVien?.HoTen ?? "Hội viên"}!";
+
+            return RedirectToAction(nameof(Index));
         }
 
         // =========================================================
@@ -604,15 +746,50 @@ namespace DuAnCuaToi.Controllers
             user.TenDangNhap =
                 model.TenDangNhap;
 
-            // Nếu có nhập mật khẩu mới
-            // thì mã hóa bằng BCrypt.
-            if (!string.IsNullOrWhiteSpace(
-                    model.MatKhauMoi))
+            // Xử lý đổi mật khẩu an toàn
+            if (!string.IsNullOrWhiteSpace(model.MatKhauMoi))
             {
-                user.MatKhauHash =
-                    BCrypt.Net.BCrypt
-                        .HashPassword(
-                            model.MatKhauMoi);
+                if (string.IsNullOrWhiteSpace(model.MatKhauHienTai))
+                {
+                    ModelState.AddModelError(nameof(model.MatKhauHienTai), "Vui lòng nhập mật khẩu hiện tại để xác thực đổi mật khẩu.");
+                    return View(model);
+                }
+
+                bool isOldPasswordCorrect = false;
+                try
+                {
+                    isOldPasswordCorrect = BCrypt.Net.BCrypt.Verify(model.MatKhauHienTai, user.MatKhauHash);
+                }
+                catch
+                {
+                    isOldPasswordCorrect = (model.MatKhauHienTai == user.MatKhauHash);
+                }
+
+                if (!isOldPasswordCorrect)
+                {
+                    ModelState.AddModelError(nameof(model.MatKhauHienTai), "Mật khẩu hiện tại không chính xác.");
+                    return View(model);
+                }
+
+                if (model.MatKhauMoi.Length < 6)
+                {
+                    ModelState.AddModelError(nameof(model.MatKhauMoi), "Mật khẩu mới phải có ít nhất 6 ký tự.");
+                    return View(model);
+                }
+
+                if (model.MatKhauMoi == model.MatKhauHienTai)
+                {
+                    ModelState.AddModelError(nameof(model.MatKhauMoi), "Mật khẩu mới không được trùng với mật khẩu hiện tại.");
+                    return View(model);
+                }
+
+                if (model.MatKhauMoi != model.XacNhanMatKhau)
+                {
+                    ModelState.AddModelError(nameof(model.XacNhanMatKhau), "Xác nhận mật khẩu mới không khớp.");
+                    return View(model);
+                }
+
+                user.MatKhauHash = BCrypt.Net.BCrypt.HashPassword(model.MatKhauMoi);
             }
 
             // Đồng bộ username PT

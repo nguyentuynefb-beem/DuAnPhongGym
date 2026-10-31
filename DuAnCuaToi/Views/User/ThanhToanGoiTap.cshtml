@@ -236,6 +236,30 @@
 
                     </div>
 
+                    @if (Model.DangKyGoiTap != null)
+                    {
+                        var goiDangConHan = ViewBag.GoiDangConHan as DuAnCuaToi.Models.DangKyGoiTap;
+                        var isGiaHan = goiDangConHan != null;
+
+                        <div class="flex justify-between items-start gap-4">
+                            <span class="text-slate-500">Hạn dùng dự kiến</span>
+                            <div class="text-right">
+                                <span class="font-bold text-emerald-400">
+                                    @Model.DangKyGoiTap.NgayHetHan.ToString("dd/MM/yyyy")
+                                </span>
+                                @if (isGiaHan)
+                                {
+                                    <div class="mt-1">
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold">
+                                            <i class="fa-solid fa-calendar-plus text-[10px]"></i>
+                                            Cộng dồn từ gói hiện tại
+                                        </span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
 
                     <div class="border-t
                                 border-slate-800
@@ -612,6 +636,39 @@
                                       fa-paper-plane me-2"></i>
 
                             Tôi đã chuyển khoản
+
+                        </button>
+
+                    </form>
+
+                    <form asp-action="HuyDangKyChoThanhToan"
+                          method="post"
+                          class="mt-3">
+
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden"
+                               name="id"
+                               value="@Model.Id" />
+
+                        <button type="submit"
+                                onclick="return confirm('Bạn có chắc chắn muốn hủy đơn đăng ký gói tập này? Hóa đơn và đăng ký chờ sẽ được hủy.');"
+                                class="w-full
+                                       py-3
+                                       rounded-2xl
+                                       bg-slate-800
+                                       hover:bg-rose-500/20
+                                       border border-slate-700
+                                       hover:border-rose-500/30
+                                       text-slate-400
+                                       hover:text-rose-400
+                                       text-sm
+                                       font-semibold
+                                       transition flex items-center justify-center gap-2">
+
+                            <i class="fa-solid fa-xmark"></i>
+
+                            Hủy đơn đăng ký này
 
                         </button>
 

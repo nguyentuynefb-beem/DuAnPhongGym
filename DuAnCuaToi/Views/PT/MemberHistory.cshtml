@@ -1,55 +1,292 @@
 @model DuAnCuaToi.ViewModels.PTMemberHistoryViewModel
 
 @{
-    ViewData["Title"] = "Lịch sử hội viên";
+    ViewData["Title"] = $"Hồ sơ InBody - {Model.HoTen}";
+    var latest = Model.LatestHealth;
 }
 
-<div class="container mt-4">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h3>Hồ sơ hội viên - @Model.HoTen (@Model.MaHoiVien)</h3>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<div class="max-w-6xl mx-auto my-6 px-2 sm:px-4 space-y-6 font-sans">
+
+    <!-- HEADER -->
+    <div class="bg-[#1e232a] border border-slate-800 rounded-2xl p-6 shadow-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl font-bold">
+                <i class="fa-solid fa-file-waveform"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-xl sm:text-2xl font-black text-white">@Model.HoTen</h1>
+                    <span class="px-2.5 py-0.5 rounded-md bg-amber-500/10 text-amber-400 font-mono text-xs font-bold border border-amber-500/20">
+                        @Model.MaHoiVien
+                    </span>
+                </div>
+                <p class="text-xs sm:text-sm text-slate-400 mt-1">Theo dõi hồ sơ sức khỏe, chỉ số InBody và tiến trình luyện tập của học viên</p>
+            </div>
         </div>
-        <div class="card-body">
-            <div class="mb-3">
-                <canvas id="ptMemberChart" height="120"></canvas>
+
+        <a asp-action="Index"
+           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs sm:text-sm font-semibold transition border border-slate-700 shrink-0">
+            <i class="fa-solid fa-arrow-left"></i> Quay lại Dashboard PT
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-2xl text-sm flex items-center gap-2">
+            <i class="fa-solid fa-circle-check text-base"></i>
+            <span>@TempData["Success"]</span>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="p-4 bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-2xl text-sm flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-base"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    <!-- STATS OVERVIEW CARDS -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- Cân nặng -->
+        <div class="bg-[#1e232a] border border-slate-800 rounded-2xl p-4">
+            <div class="flex items-center justify-between text-xs text-slate-400 font-bold uppercase mb-2">
+                <span>Cân nặng gần nhất</span>
+                <i class="fa-solid fa-weight-scale text-emerald-400"></i>
+            </div>
+            <div class="text-2xl font-black text-white">
+                @(latest?.CanNang.HasValue == true ? $"{latest.CanNang:0.0} kg" : "--")
+            </div>
+            <div class="text-[11px] text-slate-500 mt-1">
+                @(latest != null ? $"Đo lúc: {latest.NgayDo:dd/MM/yyyy}" : "Chưa có dữ liệu")
+            </div>
+        </div>
+
+        <!-- Chiều cao -->
+        <div class="bg-[#1e232a] border border-slate-800 rounded-2xl p-4">
+            <div class="flex items-center justify-between text-xs text-slate-400 font-bold uppercase mb-2">
+                <span>Chiều cao</span>
+                <i class="fa-solid fa-arrows-up-down text-sky-400"></i>
+            </div>
+            <div class="text-2xl font-black text-white">
+                @(latest?.ChieuCao.HasValue == true ? $"{latest.ChieuCao:0.#} cm" : "--")
+            </div>
+            <div class="text-[11px] text-slate-500 mt-1">Chỉ số nền tảng</div>
+        </div>
+
+        <!-- BMI -->
+        <div class="bg-[#1e232a] border border-slate-800 rounded-2xl p-4">
+            <div class="flex items-center justify-between text-xs text-slate-400 font-bold uppercase mb-2">
+                <span>Chỉ số BMI</span>
+                <i class="fa-solid fa-heart-pulse text-amber-400"></i>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <span class="text-2xl font-black text-amber-400">
+                    @(latest != null && latest.BMI > 0 ? latest.BMI.ToString("0.0") : "--")
+                </span>
+                <span class="text-xs font-bold text-slate-300">
+                    @(latest?.DanhGiaBMI ?? "--")
+                </span>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-1">Chuẩn WPRO Châu Á</div>
+        </div>
+
+        <!-- WHR -->
+        <div class="bg-[#1e232a] border border-slate-800 rounded-2xl p-4">
+            <div class="flex items-center justify-between text-xs text-slate-400 font-bold uppercase mb-2">
+                <span>WHR (Eo/Hông)</span>
+                <i class="fa-solid fa-ruler-combined text-orange-400"></i>
+            </div>
+            <div class="text-2xl font-black text-orange-400">
+                @(latest?.TyLeEoHong.HasValue == true ? latest.TyLeEoHong.Value.ToString("0.00") : "--")
+            </div>
+            <div class="text-[11px] text-slate-500 mt-1">Phân bố mỡ nội tạng</div>
+        </div>
+    </div>
+
+    <!-- FORM GHI NHẬN INBODY MỚI DÀNH CHO PT -->
+    <div class="bg-[#1e232a] border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <h2 class="text-base font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4">
+            <i class="fa-solid fa-file-circle-plus text-amber-400"></i>
+            Ghi Nhận Chỉ Số InBody Cho Học Viên
+        </h2>
+
+        <form asp-action="SaveMemberHealth" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="HoiVienId" value="@Model.MemberId" />
+            <input type="hidden" name="HoTen" value="@Model.HoTen" />
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">Chiều cao (cm) <span class="text-rose-400">*</span></label>
+                    <input type="number" step="0.5" name="ChieuCao" value="@(latest?.ChieuCao)" placeholder="Ví dụ: 170" required
+                           class="w-full bg-[#161a20] border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition text-sm" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">Cân nặng (kg) <span class="text-rose-400">*</span></label>
+                    <input type="number" step="0.1" name="CanNang" value="@(latest?.CanNang)" placeholder="Ví dụ: 65.5" required
+                           class="w-full bg-[#161a20] border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition text-sm" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">Vòng ngực (cm)</label>
+                    <input type="number" step="0.5" name="VongNguc" value="@(latest?.VongNguc)" placeholder="Ví dụ: 90"
+                           class="w-full bg-[#161a20] border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition text-sm" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">Vòng eo (cm)</label>
+                    <input type="number" step="0.5" name="VongEo" value="@(latest?.VongEo)" placeholder="Ví dụ: 75"
+                           class="w-full bg-[#161a20] border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition text-sm" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">Vòng hông (cm)</label>
+                    <input type="number" step="0.5" name="VongHong" value="@(latest?.VongHong)" placeholder="Ví dụ: 95"
+                           class="w-full bg-[#161a20] border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition text-sm" />
+                </div>
             </div>
 
-            <table class="table table-sm table-striped">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">Đánh giá thể lực / Tiến độ buổi tập</label>
+                    <input type="text" name="TinhTrangSucKhoe" placeholder="Ví dụ: Thể lực tốt, hoàn thành 100% bài squat..."
+                           class="w-full bg-[#161a20] border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition text-sm" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1.5">Lưu ý chấn thương / Bệnh lý</label>
+                    <input type="text" name="BenhLy" placeholder="Ví dụ: Khớp vai còn mỏi, tránh đẩy ngực quá nặng..."
+                           class="w-full bg-[#161a20] border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition text-sm" />
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button type="submit"
+                        class="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition shadow-lg shadow-orange-500/20 flex items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu kết quả đo InBody
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- BIỂU ĐỒ TIẾN TRÌNH CỦA HỌC VIÊN -->
+    <div class="bg-[#1e232a] border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <h2 class="text-base font-bold text-white uppercase tracking-wide flex items-center gap-2 mb-4">
+            <i class="fa-solid fa-chart-line text-emerald-400"></i>
+            Biểu Đồ Xu Hướng Cân Nặng &amp; BMI Của Học Viên
+        </h2>
+        <div class="w-full">
+            <canvas id="ptMemberChart" height="110"></canvas>
+        </div>
+    </div>
+
+    <!-- BẢNG LỊCH SỬ ĐO INBODY -->
+    <div class="bg-[#1e232a] border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+            <h2 class="text-base font-bold text-amber-400 uppercase tracking-wide flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                Lịch Sử Đo InBody (@Model.LichSu.Count lần đo)
+            </h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
                 <thead>
-                    <tr>
-                        <th>Ngày đo</th>
-                        <th>Chiều cao (cm)</th>
-                        <th>Cân nặng (kg)</th>
-                        <th>BMI</th>
+                    <tr class="bg-[#161a20] text-slate-400 text-[11px] uppercase tracking-wide">
+                        <th class="px-5 py-3 font-semibold">Ngày đo</th>
+                        <th class="px-5 py-3 font-semibold">Chiều cao</th>
+                        <th class="px-5 py-3 font-semibold">Cân nặng</th>
+                        <th class="px-5 py-3 font-semibold">BMI / Thể trạng</th>
+                        <th class="px-5 py-3 font-semibold">3 Vòng (N - E - H)</th>
+                        <th class="px-5 py-3 font-semibold">WHR (Eo/Hông)</th>
+                        <th class="px-5 py-3 font-semibold">Ghi chú thể lực &amp; Bệnh lý</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @foreach (var item in Model.LichSu)
+                <tbody class="divide-y divide-slate-800">
+                    @if (Model.LichSu.Count == 0)
                     {
                         <tr>
-                            <td>@item.NgayDo.ToString("dd/MM/yyyy HH:mm")</td>
-                            <td>@(item.ChieuCao?.ToString() ?? "-")</td>
-                            <td>@(item.CanNang?.ToString() ?? "-")</td>
-                            <td>@item.BMI</td>
+                            <td colspan="7" class="px-5 py-8 text-center text-slate-500 text-xs">
+                                Chưa có dữ liệu InBody nào được ghi nhận cho học viên này.
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var item in Model.LichSu)
+                    {
+                        <tr class="hover:bg-white/5 transition">
+                            <td class="px-5 py-3">
+                                <div class="font-medium text-white">@item.NgayDo.ToString("dd/MM/yyyy")</div>
+                                <div class="text-[11px] text-slate-500">@item.NgayDo.ToString("HH:mm")</div>
+                            </td>
+                            <td class="px-5 py-3 text-slate-300">
+                                @(item.ChieuCao.HasValue ? $"{item.ChieuCao} cm" : "-")
+                            </td>
+                            <td class="px-5 py-3 text-white font-bold">
+                                @(item.CanNang.HasValue ? $"{item.CanNang} kg" : "-")
+                            </td>
+                            <td class="px-5 py-3">
+                                @if (item.BMI > 0)
+                                {
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="font-bold text-amber-400">@item.BMI</span>
+                                        <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                            @item.DanhGiaBMI
+                                        </span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-slate-500">-</span>
+                                }
+                            </td>
+                            <td class="px-5 py-3 text-slate-300 font-mono text-xs">
+                                @if (item.VongNguc.HasValue || item.VongEo.HasValue || item.VongHong.HasValue)
+                                {
+                                    @($"{item.VongNguc?.ToString("0.#") ?? "-"} / {item.VongEo?.ToString("0.#") ?? "-"} / {item.VongHong?.ToString("0.#") ?? "-"} cm")
+                                }
+                                else
+                                {
+                                    <span class="text-slate-500">-</span>
+                                }
+                            </td>
+                            <td class="px-5 py-3">
+                                @if (item.TyLeEoHong.HasValue)
+                                {
+                                    <span class="font-semibold text-sky-400">@item.TyLeEoHong.Value.ToString("0.00")</span>
+                                }
+                                else
+                                {
+                                    <span class="text-slate-500">-</span>
+                                }
+                            </td>
+                            <td class="px-5 py-3 text-xs text-slate-300 max-w-[220px] truncate" title="@(item.TinhTrangSucKhoe ?? item.BenhLy ?? "")">
+                                @(string.IsNullOrWhiteSpace(item.TinhTrangSucKhoe) ? (item.BenhLy ?? "-") : item.TinhTrangSucKhoe)
+                            </td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
     </div>
+
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         (function () {
-            const data = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.LichSu.Select(x => new { x.NgayDo, x.CanNang, x.ChieuCao, BMI = x.BMI }))); 
-            const labels = data.slice().reverse().map(d => new Date(d.NgayDo).toLocaleDateString());
-            const weights = data.slice().reverse().map(d => d.CanNang ?? 0);
-            const bmis = data.slice().reverse().map(d => d.BMI ?? 0);
+            const raw = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.LichSu.Select(x => new {
+                NgayDo = x.NgayDo.ToString("yyyy-MM-dd"),
+                CanNang = x.CanNang ?? 0,
+                BMI = x.BMI
+            })));
 
-            const ctx = document.getElementById('ptMemberChart').getContext('2d');
-            new Chart(ctx, {
+            const items = raw.slice().reverse();
+            const labels = items.map(d => new Date(d.NgayDo).toLocaleDateString('vi-VN'));
+            const weights = items.map(d => d.CanNang);
+            const bmis = items.map(d => d.BMI);
+
+            const canvas = document.getElementById('ptMemberChart');
+            if (!canvas) return;
+
+            new Chart(canvas.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: labels,
@@ -57,40 +294,55 @@
                         {
                             label: 'Cân nặng (kg)',
                             data: weights,
-                            borderColor: '#28a745',
-                            backgroundColor: 'rgba(40,167,69,0.1)',
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16,185,129,0.12)',
                             yAxisID: 'y',
-                            tension: 0.2,
+                            tension: 0.3,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
                             fill: true
                         },
                         {
-                            label: 'BMI',
+                            label: 'Chỉ số BMI',
                             data: bmis,
-                            borderColor: '#007bff',
-                            backgroundColor: 'rgba(0,123,255,0.1)',
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245,158,11,0.1)',
                             yAxisID: 'y1',
-                            tension: 0.2,
-                            fill: true
+                            tension: 0.3,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            fill: false
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     interaction: { mode: 'index', intersect: false },
-                    stacked: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#cbd5e1', font: { family: 'inherit', size: 12 } }
+                        }
+                    },
                     scales: {
+                        x: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        },
                         y: {
                             type: 'linear',
                             display: true,
                             position: 'left',
-                            title: { display: true, text: 'Cân nặng (kg)' }
+                            ticks: { color: '#10b981' },
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            title: { display: true, text: 'Cân nặng (kg)', color: '#10b981' }
                         },
                         y1: {
                             type: 'linear',
                             display: true,
                             position: 'right',
+                            ticks: { color: '#f59e0b' },
                             grid: { drawOnChartArea: false },
-                            title: { display: true, text: 'BMI' }
+                            title: { display: true, text: 'BMI', color: '#f59e0b' }
                         }
                     }
                 }
