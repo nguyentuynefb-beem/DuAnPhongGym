@@ -26,6 +26,10 @@ builder.Services.AddScoped<IAIContextBuilder, AIContextBuilder>();
 builder.Services.AddScoped<IRevenueReportService, RevenueReportService>();
 builder.Services.AddScoped<IReportExportService, ReportExportService>();
 
+// Dịch vụ AI tự động nhắc nhở gia hạn gói tập sắp hết hạn trước 1 và 2 ngày
+builder.Services.AddScoped<IMembershipRenewalService, MembershipRenewalService>();
+builder.Services.AddHostedService<MembershipExpiryBackgroundService>();
+
 // Cấu hình license miễn phí (Community) cho thư viện xuất PDF QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
 

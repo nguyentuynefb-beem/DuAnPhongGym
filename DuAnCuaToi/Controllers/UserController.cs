@@ -35,19 +35,22 @@ namespace DuAnCuaToi.Controllers
         private readonly IHealthService _healthService;
         private readonly IAIContextBuilder _aiContextBuilder;
         private readonly IMemoryCache _cache;
+        private readonly IMembershipRenewalService _renewalService;
 
         public UserController(
             ApplicationDbContext context,
             IGeminiService geminiService,
             IHealthService healthService,
             IAIContextBuilder aiContextBuilder,
-            IMemoryCache cache)
+            IMemoryCache cache,
+            IMembershipRenewalService renewalService)
         {
             _context = context;
             _geminiService = geminiService;
             _healthService = healthService;
             _aiContextBuilder = aiContextBuilder;
             _cache = cache;
+            _renewalService = renewalService;
         }
 
         // =========================================================
@@ -111,7 +114,7 @@ namespace DuAnCuaToi.Controllers
         // ======================
         // Trang chủ Hội viên
         // ======================
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             // ========================================
             // 1. LẤY ID HỘI VIÊN ĐANG ĐĂNG NHẬP
@@ -127,8 +130,8 @@ namespace DuAnCuaToi.Controllers
             // ========================================
             // 2. LẤY THÔNG TIN HỘI VIÊN
             // ========================================
-            var currentUser = _context.NguoiDungs
-                .FirstOrDefault(u => u.Id == userId);
+            var currentUser = await _context.NguoiDungs
+                .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (currentUser == null)
             {
@@ -138,26 +141,50 @@ namespace DuAnCuaToi.Controllers
             ViewBag.CurrentUser = currentUser;
 
             // ========================================
-            // 3. GÓI TẬP ĐANG HOẠT ĐỘNG
+            // 3. AI TỰ ĐỘNG KIỂM TRA & NHẮC GIA HẠN NẾU CÒN 1 HOẶC 2 NGÀY
             // ========================================
-            var goiTapDangHoatDong = _context.DangKyGoiTaps
+            try
+            {
+                await _renewalService.CheckAndSendExpiryReminderForUserAsync(userId);
+            }
+            catch
+            {
+                // Không để lỗi AI ảnh hưởng đến trang chủ
+            }
+
+            // ========================================
+            // 4. GÓI TẬP ĐANG HOẠT ĐỘNG
+            // ========================================
+            var goiTapDangHoatDong = await _context.DangKyGoiTaps
                 .Include(x => x.GoiTap)
                 .Where(x =>
                     x.NguoiDungId == userId &&
                     x.TrangThai &&
                     x.NgayHetHan >= DateTime.Now)
                 .OrderByDescending(x => x.NgayHetHan)
-                .FirstOrDefault();
+                .FirstOrDefaultAsync();
 
             ViewBag.GoiTapDangHoatDong = goiTapDangHoatDong;
 
+            if (goiTapDangHoatDong != null)
+            {
+                int daysRemaining = (goiTapDangHoatDong.NgayHetHan.Date - DateTime.Today).Days;
+                ViewBag.SoNgayConLaiGoiTap = daysRemaining;
+                ViewBag.GoiTapSapHetHan = (daysRemaining == 1 || daysRemaining == 2);
+            }
+            else
+            {
+                ViewBag.SoNgayConLaiGoiTap = 0;
+                ViewBag.GoiTapSapHetHan = false;
+            }
+
             // ========================================
-            // 4. THÔNG BÁO MỚI NHẤT
+            // 5. THÔNG BÁO MỚI NHẤT
             // ========================================
-            var thongBaoMoiNhat = _context.ThongBaos
+            var thongBaoMoiNhat = await _context.ThongBaos
                 .Where(x => x.NguoiNhanId == userId)
                 .OrderByDescending(x => x.NgayTao)
-                .FirstOrDefault();
+                .FirstOrDefaultAsync();
 
             ViewBag.ThongBaoMoiNhat = thongBaoMoiNhat;
 
@@ -198,22 +225,102 @@ namespace DuAnCuaToi.Controllers
         // =========================================================
         // TRANG THÔNG BÁO
         // =========================================================
-        public IActionResult ThongBao()
+        public async Task<IActionResult> ThongBao()
         {
-            var userIdStr = HttpContext.Session.GetString("UserId");
+            var userId = GetCurrentMemberId();
 
-            if (string.IsNullOrEmpty(userIdStr) ||
-                !int.TryParse(userIdStr, out int userId))
+            if (userId == null)
             {
                 return RedirectToAction("Index", "Home");
             }
 
-            var thongBaos = _context.ThongBaos
-                .Where(x => x.NguoiNhanId == userId)
+            var thongBaos = await _context.ThongBaos
+                .Where(x => x.NguoiNhanId == userId.Value)
                 .OrderByDescending(x => x.NgayTao)
-                .ToList();
+                .ToListAsync();
 
             return View(thongBaos);
+        }
+
+        // =========================================================
+        // ĐÁNH DẤU TẤT CẢ THÔNG BÁO LÀ ĐÃ ĐỌC
+        // =========================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DanhDauTatCaThongBaoDaDoc()
+        {
+            var userId = GetCurrentMemberId();
+            if (userId == null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            var unreadNotifications = await _context.ThongBaos
+                .Where(x => x.NguoiNhanId == userId.Value && !x.DaDoc)
+                .ToListAsync();
+
+            if (unreadNotifications.Any())
+            {
+                foreach (var item in unreadNotifications)
+                {
+                    item.DaDoc = true;
+                }
+
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Đã đánh dấu tất cả thông báo là đã đọc.";
+            }
+
+            return RedirectToAction(nameof(ThongBao));
+        }
+
+        // =========================================================
+        // ĐÁNH DẤU TỪNG THÔNG BÁO LÀ ĐÃ ĐỌC
+        // =========================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DanhDauThongBaoDaDoc(int id)
+        {
+            var userId = GetCurrentMemberId();
+            if (userId == null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            var notification = await _context.ThongBaos
+                .FirstOrDefaultAsync(x => x.Id == id && x.NguoiNhanId == userId.Value);
+
+            if (notification != null && !notification.DaDoc)
+            {
+                notification.DaDoc = true;
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(ThongBao));
+        }
+
+        // =========================================================
+        // XÓA THÔNG BÁO
+        // =========================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> XoaThongBao(int id)
+        {
+            var userId = GetCurrentMemberId();
+            if (userId == null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            var notification = await _context.ThongBaos
+                .FirstOrDefaultAsync(x => x.Id == id && x.NguoiNhanId == userId.Value);
+
+            if (notification != null)
+            {
+                _context.ThongBaos.Remove(notification);
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(ThongBao));
         }
 
 
@@ -280,6 +387,22 @@ namespace DuAnCuaToi.Controllers
                     ))
                 .OrderByDescending(x => x.NgayLap)
                 .ToList();
+
+            // Gói đang active hiện tại
+            var goiActive = goiTapsCuaToi.FirstOrDefault(x => x.TrangThai && x.NgayHetHan >= DateTime.Now);
+            if (goiActive != null)
+            {
+                int daysLeft = (goiActive.NgayHetHan.Date - DateTime.Today).Days;
+                ViewBag.SoNgayConLaiGoiTap = daysLeft;
+                ViewBag.GoiTapSapHetHan = (daysLeft == 1 || daysLeft == 2);
+                ViewBag.TenGoiActive = goiActive.GoiTap?.TenGoi;
+                ViewBag.NgayHetHanActive = goiActive.NgayHetHan;
+            }
+            else
+            {
+                ViewBag.SoNgayConLaiGoiTap = 0;
+                ViewBag.GoiTapSapHetHan = false;
+            }
 
             ViewBag.DanhSachGoi = danhSachGoi;
 
