@@ -1,298 +1,202 @@
-﻿@model List<DuAnCuaToi.Models.ThongBao>
+@model List<DuAnCuaToi.Models.ThongBao>
 
 @{
     Layout = null;
-
-    var tenHienThi =
-        Context.Session.GetString("UserName")
-        ?? "Hội viên";
+    var tenHienThi = Context.Session.GetString("UserName") ?? "Hội viên";
+    var unreadCount = Model?.Count(x => !x.DaDoc) ?? 0;
 }
 
 <!DOCTYPE html>
-
-<html lang="vi"
-      class="h-full bg-slate-950 text-slate-100">
-
+<html lang="vi" class="h-full bg-slate-950 text-slate-100">
 <head>
-
     <meta charset="utf-8" />
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0" />
-
-    <title>Thông báo - Smart Gym</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thông báo - SmartGym</title>
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            500: '#f97316',
+                            600: '#ea580c'
+                        }
+                    }
+                }
+            }
+        };
+    </script>
 </head>
-
-
 <body class="min-h-full bg-slate-950 text-slate-100">
-
-<div class="min-h-screen">
-
-
-    <!-- HEADER -->
-
-    <header class="h-16
-                   bg-slate-900
-                   border-b border-slate-800
-                   flex items-center justify-between
-                   px-4 sm:px-6">
-
-        <div class="flex items-center gap-3">
-
-            <div class="w-9 h-9
-                        bg-orange-500
-                        rounded-lg
-                        flex items-center
-                        justify-center">
-
-                <i class="fa-solid fa-dumbbell"></i>
-
+    <div class="min-h-screen flex flex-col">
+        <!-- HEADER -->
+        <header class="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30">
+            <div class="flex items-center gap-3">
+                <a asp-controller="User" asp-action="Index" class="flex items-center gap-2">
+                    <div class="w-9 h-9 bg-gradient-to-tr from-orange-600 to-amber-500 rounded-xl flex items-center justify-center text-white shadow-md shadow-orange-500/20">
+                        <i class="fa-solid fa-dumbbell"></i>
+                    </div>
+                    <span class="font-bold text-white tracking-tight">SMART<span class="text-orange-500">GYM</span></span>
+                </a>
             </div>
 
-            <span class="font-bold text-white">
-                SMART<span class="text-orange-500">GYM</span>
-            </span>
+            <div class="flex items-center gap-4">
+                <span class="text-xs sm:text-sm text-slate-300 font-medium">@tenHienThi</span>
+                <a asp-controller="Home" asp-action="Logout" class="text-slate-400 hover:text-red-400 transition" title="Đăng xuất">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </a>
+            </div>
+        </header>
 
-        </div>
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+            <!-- TITLE & ACTION -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold flex items-center gap-2 text-white">
+                        <i class="fa-solid fa-bell text-orange-500"></i>
+                        <span>Hộp Thư Thông Báo</span>
+                        @if (unreadCount > 0)
+                        {
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-500 text-white shadow-sm">
+                                @unreadCount mới
+                            </span>
+                        }
+                    </h1>
+                    <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                        Cập nhật thanh toán, thời hạn gói tập, lịch tập và lời nhắc từ SmartGym AI.
+                    </p>
+                </div>
 
-
-        <div class="flex items-center gap-4">
-
-            <span class="text-sm text-slate-300">
-                @tenHienThi
-            </span>
-
-            <a asp-controller="Home"
-               asp-action="Logout"
-               class="text-slate-400
-                      hover:text-red-400">
-
-                <i class="fa-solid fa-right-from-bracket"></i>
-
-            </a>
-
-        </div>
-
-    </header>
-
-
-    <!-- MAIN -->
-
-    <main class="max-w-5xl mx-auto p-6">
-
-
-        <!-- TITLE -->
-
-        <div class="flex items-center justify-between mb-6">
-
-            <div>
-
-                <h1 class="text-2xl font-bold">
-
-                    <i class="fa-solid fa-bell text-orange-500 me-2"></i>
-
-                    Thông báo
-
-                </h1>
-
-                <p class="text-sm text-slate-400 mt-1">
-
-                    Thanh toán, lịch tập và điểm danh của bạn.
-
-                </p>
-
+                <div class="flex items-center gap-2">
+                    <a asp-controller="User" asp-action="Index" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-semibold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span>Quay lại</span>
+                    </a>
+                </div>
             </div>
 
+            <!-- THÔNG BÁO FLASH MESSAGE -->
+            @if (TempData["Success"] != null)
+            {
+                <div class="mb-5 p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-2xl text-xs sm:text-sm flex items-center justify-between">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check"></i>
+                        @TempData["Success"]
+                    </span>
+                    <button onclick="this.parentElement.remove()" class="text-emerald-400/60 hover:text-emerald-400">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            }
 
-            <a asp-controller="User"
-               asp-action="Index"
-               class="px-4 py-2
-                      bg-slate-800
-                      hover:bg-slate-700
-                      rounded-xl
-                      text-sm">
+            <!-- NÚT ĐÁNH DẤU TẤT CẢ ĐÃ ĐỌC -->
+            @if (Model != null && Model.Any(x => !x.DaDoc))
+            {
+                <div class="mb-5 flex items-center justify-between bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3 sm:px-4">
+                    <span class="text-xs text-slate-400">
+                        Bạn có <strong class="text-orange-400 font-bold">@unreadCount</strong> thông báo chưa đọc.
+                    </span>
+                    <form asp-controller="User" asp-action="DanhDauTatCaThongBaoDaDoc" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-xs font-bold transition shadow-md shadow-orange-500/20 flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-check-double"></i>
+                            <span>Đánh dấu tất cả đã đọc</span>
+                        </button>
+                    </form>
+                </div>
+            }
 
-                <i class="fa-solid fa-arrow-left me-1"></i>
+            <!-- DANH SÁCH THÔNG BÁO -->
+            @if (Model != null && Model.Any())
+            {
+                <div class="space-y-3 sm:space-y-4">
+                    @foreach (var item in Model)
+                    {
+                        var isReminder = item.NoiDung != null && (item.NoiDung.Contains("hết hạn") || item.NoiDung.Contains("gia hạn"));
+                        var isPayment = item.NoiDung != null && (item.NoiDung.Contains("thanh toán") || item.NoiDung.Contains("VNĐ") || item.NoiDung.Contains("chuyển khoản"));
 
-                Quay lại
-
-            </a>
-
-        </div>
-
-
-        <!-- ĐÁNH DẤU ĐÃ ĐỌC -->
-
-        @if (Model != null && Model.Any(x => !x.DaDoc))
-        {
-
-            <form asp-controller="User"
-                  asp-action="DanhDauTatCaThongBaoDaDoc"
-                  method="post"
-                  class="mb-5">
-
-                <button type="submit"
-                        class="px-4 py-2
-                               bg-orange-500
-                               hover:bg-orange-600
-                               rounded-xl
-                               text-sm
-                               font-semibold">
-
-                    <i class="fa-solid fa-check-double me-1"></i>
-
-                    Đánh dấu tất cả đã đọc
-
-                </button>
-
-            </form>
-
-        }
-
-
-        <!-- DANH SÁCH -->
-
-        @if (Model != null && Model.Any())
-        {
-
-            <div class="space-y-4">
-
-                @foreach (var item in Model)
-                {
-
-                    <div class="
-                        p-5
-                        rounded-2xl
-                        border
-                        @(item.DaDoc
-                            ? "bg-slate-900 border-slate-800"
-                            : "bg-orange-500/10 border-orange-500/30")
-                    ">
-
-                        <div class="flex gap-4">
-
-                            <div class="
-                                w-11 h-11
-                                rounded-xl
-                                flex items-center
-                                justify-center
-                                shrink-0
-                                @(item.DaDoc
-                                    ? "bg-slate-800 text-slate-400"
-                                    : "bg-orange-500/20 text-orange-400")
-                            ">
-
-                                <i class="fa-solid fa-bell"></i>
-
-                            </div>
-
-
-                            <div class="flex-1">
-
-                                <div class="flex justify-between gap-4">
-
-                                    <div>
-
-                                        <p class="
-                                            text-sm
-                                            @(item.DaDoc
-                                                ? "text-slate-300"
-                                                : "text-white font-bold")
-                                        ">
-
-                                            @item.NoiDung
-
-                                        </p>
-
-
-                                        <p class="text-xs
-                                                  text-slate-500
-                                                  mt-2">
-
-                                            @item.NgayTao
-                                                .ToString("HH:mm - dd/MM/yyyy")
-
-                                        </p>
-
-                                    </div>
-
-
-                                    @if (!item.DaDoc)
+                        <div class="p-4 sm:p-5 rounded-2xl border transition duration-150 @(item.DaDoc ? "bg-slate-900/70 border-slate-800/80 hover:border-slate-700" : "bg-gradient-to-r from-orange-500/10 via-slate-900 to-slate-900 border-orange-500/30 shadow-md shadow-orange-500/5")">
+                            <div class="flex items-start gap-3.5">
+                                <!-- ICON THEO LOẠI THÔNG BÁO -->
+                                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 @(item.DaDoc ? "bg-slate-800 text-slate-400" : (isReminder ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : (isPayment ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-orange-500/20 text-orange-400 border border-orange-500/30")))">
+                                    @if (isReminder)
                                     {
-
-                                        <span class="
-                                            px-2 py-1
-                                            bg-orange-500
-                                            text-white
-                                            text-[10px]
-                                            font-bold
-                                            rounded-full
-                                            h-fit">
-
-                                            MỚI
-
-                                        </span>
-
+                                        <i class="fa-solid fa-hourglass-half text-sm sm:text-base"></i>
                                     }
-
+                                    else if (isPayment)
+                                    {
+                                        <i class="fa-solid fa-receipt text-sm sm:text-base"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="fa-solid fa-bell text-sm sm:text-base"></i>
+                                    }
                                 </div>
 
+                                <!-- NỘI DUNG -->
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="flex-1">
+                                            @if (isReminder)
+                                            {
+                                                <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 mb-1.5">
+                                                    <i class="fa-solid fa-sparkles text-[9px]"></i>
+                                                    Nhắc nhở AI
+                                                </div>
+                                            }
+                                            <p class="text-xs sm:text-sm leading-relaxed @(item.DaDoc ? "text-slate-300" : "text-white font-semibold")">
+                                                @item.NoiDung
+                                            </p>
+                                            <p class="text-[11px] text-slate-500 mt-2 flex items-center gap-1.5">
+                                                <i class="fa-regular fa-clock text-[10px]"></i>
+                                                <span>@(item.NgayTao.ToString("HH:mm - dd/MM/yyyy"))</span>
+                                            </p>
+                                        </div>
+
+                                        <!-- HÀNH ĐỘNG RIÊNG TỪNG THÔNG BÁO -->
+                                        <div class="flex items-center gap-2 shrink-0">
+                                            @if (!item.DaDoc)
+                                            {
+                                                <span class="px-2 py-0.5 bg-orange-500 text-white text-[10px] font-bold rounded-full">
+                                                    MỚI
+                                                </span>
+                                                <form asp-controller="User" asp-action="DanhDauThongBaoDaDoc" asp-route-id="@item.Id" method="post" title="Đánh dấu đã đọc">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 transition text-xs" title="Đã đọc">
+                                                        <i class="fa-solid fa-check"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            <form asp-controller="User" asp-action="XoaThongBao" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa thông báo này?')" title="Xóa thông báo">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="p-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-500 hover:text-red-400 transition text-xs">
+                                                    <i class="fa-regular fa-trash-can"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-
                         </div>
-
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center">
+                    <div class="w-16 h-16 rounded-2xl bg-slate-800/80 text-slate-500 flex items-center justify-center mx-auto text-2xl mb-4">
+                        <i class="fa-solid fa-bell-slash"></i>
                     </div>
-
-                }
-
-            </div>
-
-        }
-        else
-        {
-
-            <div class="
-                bg-slate-900
-                border border-slate-800
-                rounded-2xl
-                p-12
-                text-center">
-
-                <i class="
-                    fa-solid fa-bell-slash
-                    text-5xl
-                    text-slate-600">
-                </i>
-
-                <h2 class="text-lg font-bold mt-4">
-
-                    Chưa có thông báo
-
-                </h2>
-
-                <p class="text-sm
-                          text-slate-500
-                          mt-2">
-
-                    Khi có thanh toán, lịch tập hoặc điểm danh,
-                    thông báo sẽ xuất hiện tại đây.
-
-                </p>
-
-            </div>
-
-        }
-
-    </main>
-
-</div>
-
+                    <h2 class="text-base sm:text-lg font-bold text-white">Chưa có thông báo nào</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-2 max-w-sm mx-auto">
+                        Khi có cập nhật về thanh toán, lịch tập hoặc nhắc nhở gia hạn từ AI, thông báo sẽ xuất hiện tại đây.
+                    </p>
+                </div>
+            }
+        </main>
+    </div>
 </body>
-
 </html>

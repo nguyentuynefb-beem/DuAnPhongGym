@@ -318,6 +318,35 @@
             </div>
         </section>
 
+        @if (ViewBag.GoiTapSapHetHan == true)
+        {
+            var daysLeft = (int)(ViewBag.SoNgayConLaiGoiTap ?? 1);
+            <div class="relative overflow-hidden rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-slate-900 p-4 sm:p-5 shadow-lg shadow-amber-500/5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-start sm:items-center gap-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-hourglass-half text-lg animate-pulse"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                    <i class="fa-solid fa-sparkles me-1"></i>Trợ Lý AI Nhắc Nhở
+                                </span>
+                                <span class="text-xs font-bold text-amber-400">Gói tập sắp hết hạn!</span>
+                            </div>
+                            <p class="text-xs text-slate-300 mt-1">
+                                Gói tập của bạn sẽ hết hạn sau <strong class="text-white font-extrabold">@(daysLeft == 1 ? "1 ngày nữa (ngày mai)" : "2 ngày nữa")</strong>. Hãy gia hạn ngay hôm nay để không gián đoạn lịch tập và duy trì phong độ đỉnh cao cùng SmartGym!
+                            </p>
+                        </div>
+                    </div>
+                    <a href="@Url.Action("GoiTapCuaToi", "User")" class="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-xs shadow-md shadow-orange-500/20 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-arrow-rotate-right"></i>
+                        <span>Gia hạn ngay</span>
+                    </a>
+                </div>
+            </div>
+        }
+
         <section>
             <div class="mb-3">
                 <h2 class="text-lg font-bold text-white">Truy cập nhanh</h2>

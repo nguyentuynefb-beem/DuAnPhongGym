@@ -28,6 +28,12 @@ namespace DuAnCuaToi.Services
             string question,
             string adminSystemContext,
             string conversationHistory = "");
+
+        Task<string> GenerateRenewalReminderMessageAsync(
+            string memberName,
+            string packageName,
+            int daysRemaining,
+            DateTime expiryDate);
     }
 
 
@@ -378,6 +384,13 @@ BẠN ĐANG TRÒ CHUYỆN TRỰC TIẾP VỚI MỘT HỘI VIÊN CỦA PHÒNG T�
   + Kèm theo 1 lời gợi ý ngắn, thân thiện (ví dụ: "Nếu bạn thích tập sau giờ làm, các khung giờ từ 18:00 rất thuận tiện đó!").
   + Nếu không có lịch: "Hiện hệ thống chưa ghi nhận khung giờ trống của HLV này trong 7 ngày tới. Bạn có muốn xem lịch của HLV khác không? 😊"
 
+============================================================
+5. CHỦ ĐỘNG NHẮC NHỞ GIA HẠN GÓI TẬP (PROACTIVE RENEWAL REMINDER)
+============================================================
+- Quan sát dữ liệu "GÓI TẬP HIỆN TẠI" của hội viên trong context.
+- NẾU gói tập của hội viên còn lại 1 ngày hoặc 2 ngày (hoặc đã hết hạn), hãy khéo léo chèn thêm 1 câu nhắc nhở ấm áp và truyền cảm hứng ở cuối câu trả lời:
+  + "P/S: Gói tập [Tên gói] của bạn sẽ hết hạn sau [1/2] ngày nữa (vào [dd/MM/yyyy]). Bạn nhớ gia hạn sớm để duy trì phong độ và không bị gián đoạn buổi tập nhé! 💪🏋️‍♂️"
+
 Trả lời hoàn toàn bằng tiếng Việt.
 """;
 
@@ -505,6 +518,63 @@ Hãy phân tích dữ liệu trên và trả lời câu hỏi của Admin một 
                 2000,
                 "low",
                 0.25);
+        }
+
+
+        // =========================================================
+        // FR12 - AI NHẮC NHỞ GIA HẠN GÓI TẬP (RENEWAL REMINDER)
+        // =========================================================
+        public async Task<string> GenerateRenewalReminderMessageAsync(
+            string memberName,
+            string packageName,
+            int daysRemaining,
+            DateTime expiryDate)
+        {
+            var dayText = daysRemaining == 1 ? "1 ngày nữa (ngày mai)" : "2 ngày nữa";
+
+            var systemPrompt = """
+Bạn là SmartGym AI Notification Assistant. Nhiệm vụ của bạn là soạn một tin nhắn thông báo ngắn gọn, ấm áp, truyền cảm hứng thể thao để nhắc nhở hội viên gia hạn gói tập sắp hết hạn.
+
+Yêu cầu bắt buộc:
+- Độ dài ngắn gọn: 2 đến 3 câu (dưới 80 từ), rất thích hợp hiển thị trong hộp thư thông báo website/app.
+- Giọng văn thân thiện, tôn trọng, đồng cảm và khích lệ tinh thần tiếp tục rèn luyện thể thao.
+- Nêu rõ tên hội viên, tên gói tập, số ngày còn lại (1 hoặc 2 ngày) và ngày hết hạn.
+- Sử dụng 1-2 emoji thể thao tinh tế (💪, 🏋️‍♂️, 🔥, ✨).
+- Đi thẳng vào thông điệp tích cực, không chào hỏi rườm rà.
+- Trả lời bằng tiếng Việt.
+""";
+
+            var userPrompt = $"""
+Thông tin hội viên:
+- Tên hội viên: {memberName}
+- Gói tập: {packageName}
+- Số ngày còn lại: {daysRemaining} ngày ({dayText})
+- Ngày hết hạn: {expiryDate:dd/MM/yyyy}
+
+Hãy viết một tin nhắn thông báo nhắc gia hạn thật ấm áp và tràn đầy động lực cho hội viên này.
+""";
+
+            try
+            {
+                var response = await SendToGeminiAsync(
+                    systemPrompt,
+                    userPrompt,
+                    maxOutputTokens: 250,
+                    thinkingLevel: "low",
+                    temperature: 0.6);
+
+                if (!string.IsNullOrWhiteSpace(response))
+                {
+                    return response.Trim();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Không thể gọi Gemini sinh thông báo nhắc gia hạn, chuyển sang mẫu chuẩn bị sẵn.");
+            }
+
+            // Mẫu dự phòng mặc định nếu API quá tải hoặc ngắt kết nối
+            return $"Chào {memberName}! Gói tập [{packageName}] của bạn sẽ hết hạn sau {dayText} ({expiryDate:dd/MM/yyyy}). Hãy gia hạn ngay hôm nay để giữ vững phong độ và không gián đoạn hành trình tập luyện tuyệt vời này nhé! 💪🏋️‍♂️";
         }
 
 
